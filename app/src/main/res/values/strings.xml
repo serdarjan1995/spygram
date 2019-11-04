@@ -14,4 +14,11 @@
     <string name="menu_tools">Tools</string>
     <string name="menu_share">Share</string>
     <string name="menu_send">Send</string>
+    <string name="url_host">https://i.instagram.com</string>
+    <string name="path_get_followers">/api/v1/friendships/%s/followers/</string>
+    <string name="path_get_followees">/api/v1/friendships/%s/following/</string>
+    <string name="path_get_story">/api/v1/feed/user/%s/story/</string>
+    <string name="path_login">/api/v1/accounts/login/</string>
+    <string name="content_type">Application/x-www-form-urlencoded</string>
+    <string name="user_agent">Instagram 99.0.0.32.182 Android</string>
 </resources>
