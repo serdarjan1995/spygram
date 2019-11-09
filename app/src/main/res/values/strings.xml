@@ -2,14 +2,14 @@
     <string name="app_name">Spygram</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_title">Spygram</string>
     <string name="nav_header_subtitle">android.studio@android.com</string>
     <string name="nav_header_desc">Navigation header</string>
     <string name="action_settings">Settings</string>
 
     <string name="menu_key">Set Key</string>
     <string name="menu_followers">Followers</string>
-    <string name="menu_following">Following</string>
+    <string name="menu_following">Followees</string>
     <string name="menu_slideshow">Slideshow</string>
     <string name="menu_tools">Tools</string>
     <string name="menu_share">Share</string>
@@ -18,7 +18,14 @@
     <string name="path_get_followers">/api/v1/friendships/%s/followers/</string>
     <string name="path_get_followees">/api/v1/friendships/%s/following/</string>
     <string name="path_get_story">/api/v1/feed/user/%s/story/</string>
+    <string name="path_logout">/api/v1/accounts/logout/</string>
     <string name="path_login">/api/v1/accounts/login/</string>
     <string name="content_type">Application/x-www-form-urlencoded</string>
     <string name="user_agent">Instagram 99.0.0.32.182 Android</string>
+    <string name="sign_in">Sign in</string>
+    <string name="password">Password</string>
+    <string name="username">Username</string>
+    <string name="keyphrase">Keyphrase</string>
+    <string name="set_keyphrase">Set Keyphrase</string>
+    <string name="encryption_text">Your session will be stored locally \nand it should be encrypted.\nPlease set your keyphrase which you will be asked when you open app</string>
 </resources>

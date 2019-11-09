@@ -1,5 +1,6 @@
 package com.ins.spygram;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -25,6 +26,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -47,27 +49,15 @@ import okhttp3.ResponseBody;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-
-    /*
-        AES encrypt your @session_id, @user_id, @session_agent then place them in base64encoded form to related variables
-        Place your init vector in bytes array to @initVector
-        Randomly generate some string, get its md5hash twice and place to @checkDecryptionSuccess
-
-
-     */
-
-
     private ArrayList<UserFollower> followers;
     private String USER_ID;
     private String SESSION_ID;
     private FragmentManager fragmentManager;
     private ViewFragment keyFragment;
     private ViewFragment followersFragment;
-    private String keyPhrase;
     private String checkDecryptionString;
     private String checkDecryptionSuccess;
-    private String checkDecryptionResult;
-    private static byte[] initVector;
+    private String initVector;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,25 +77,7 @@ public class MainActivity extends AppCompatActivity
         followersFragment = new ViewFragment(R.layout.content_followers);
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
-        SharedPreferences sharedPreferences = this.getSharedPreferences(getApplicationContext()
-                        .getPackageName(), Context.MODE_PRIVATE);
-
-        if (sharedPreferences.contains("logged_in") &&
-                sharedPreferences.getInt("logged_in", 0) == 1){
-            try{
-                USER_ID = sharedPreferences.getString("user_id", null);
-                SESSION_ID = sharedPreferences.getString("session_id", null);
-                //decryptArguments();
-            }
-            catch (Exception e){
-                e.printStackTrace();
-            }
-
-        }
-        else{
-            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
-            startActivity(intent);
-        }
+        getSharedPreferencesValues();
     }
 
     @Override
@@ -148,7 +120,7 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.nav_key) {
             fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
         } else if (id == R.id.nav_followers) {
-            if( checkDecryptionResult.equals(checkDecryptionSuccess)){
+            if( checkDecryptionString.equals(checkDecryptionSuccess)){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment).commit();
                 followers = getFollows(USER_ID,1);
             }
@@ -158,7 +130,7 @@ public class MainActivity extends AppCompatActivity
             }
         }
         else if (id == R.id.nav_following) {
-            if( checkDecryptionResult.equals(checkDecryptionSuccess)){
+            if( checkDecryptionString.equals(checkDecryptionSuccess)){
                 fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment).commit();
                 followers = getFollows(USER_ID,2);
             }
@@ -174,12 +146,34 @@ public class MainActivity extends AppCompatActivity
 
     public void onClickKeypassBtn(View v){
         EditText text = findViewById(R.id.setkeyphrasetext);
-        this.keyPhrase = text.getText().toString();
-        decryptArguments();
+        int status = decryptArguments(text.getText().toString());
+        if (status == 0){
+            fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
+                    .commitAllowingStateLoss();
+            followers = getFollows(USER_ID,2);
+        }
+    }
+
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 0) {
+            if(resultCode == Activity.RESULT_OK){
+                String keyphrase = data.getStringExtra("keyphrase");
+                if (keyphrase != null){
+                    getSharedPreferencesValues();
+                    int status = decryptArguments(keyphrase);
+                    if (status == 0){
+                        Toast.makeText(this,"All done",Toast.LENGTH_SHORT).show();
+                        fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
+                                .commitAllowingStateLoss();
+                        followers = getFollows(USER_ID,2);
+                    }
+                }
+            }
+        }
     }
 
     public ArrayList <UserFollower> getFollows(String id, int followType){
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Util.getHttpClient();
         String url;
         if (followType == 1){
             url = getString(R.string.url_host) + getString(R.string.path_get_followers);
@@ -274,7 +268,7 @@ public class MainActivity extends AppCompatActivity
 
 
     public void getStoryOfUser(String userId){
-        OkHttpClient client = new OkHttpClient();
+        OkHttpClient client = Util.getHttpClient();
         String url = getString(R.string.url_host) + getString(R.string.path_get_story);
         url = String.format(url,userId);
         final Request request = new Request.Builder()
@@ -318,61 +312,51 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-    public static byte[] md5hash(byte[] bArr) {
-        MessageDigest instance;
-        byte[] digest = null;
-        try {
-            instance = MessageDigest.getInstance("MD5");
-            instance.update(bArr);
-            digest = instance.digest();
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+
+    public void getSharedPreferencesValues(){
+        SharedPreferences sharedPreferences = this.getSharedPreferences(getApplicationContext()
+                .getPackageName(), Context.MODE_PRIVATE);
+
+        if (sharedPreferences.contains("logged_in") &&
+                sharedPreferences.getInt("logged_in", 0) == 1){
+            try{
+                USER_ID = sharedPreferences.getString("user_id", null);
+                SESSION_ID = sharedPreferences.getString("session_id", null);
+                checkDecryptionSuccess = sharedPreferences.getString("check", null);
+                checkDecryptionString = sharedPreferences.getString("checkEnc", null);
+                initVector = sharedPreferences.getString("init_vector", null);
+            }
+            catch (Exception e){
+                e.printStackTrace();
+            }
+
         }
-        return digest;
+        else{
+            Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+            startActivityForResult(intent,0);
+        }
     }
 
-    public void decryptArguments(){
-        Cipher instance;
-        byte[] keyphraseinbytes;
-        try {
-            keyphraseinbytes = keyPhrase.getBytes(StandardCharsets.UTF_8);
-            SecretKeySpec secretKeySpec = new SecretKeySpec(md5hash(keyphraseinbytes), "AES");
-            instance = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            instance.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(initVector));
-            byte[] checksuccess = instance.doFinal(Base64.decode(checkDecryptionString, Base64.DEFAULT));
-            byte[] resultcheck = md5hash(md5hash(checksuccess));
-            String testcheckDecryptionResult = toHexString(resultcheck);
-            if( testcheckDecryptionResult.equals(checkDecryptionSuccess)){
-                USER_ID = new String(instance.doFinal(Base64.decode(USER_ID, Base64.DEFAULT)));
-                SESSION_ID = new String(instance.doFinal(Base64.decode(SESSION_ID, Base64.DEFAULT)));
-                checkDecryptionResult = testcheckDecryptionResult;
-                Toast.makeText(this,"KeyPhrase correct",Toast.LENGTH_SHORT).show();
-            }
-        } catch (BadPaddingException e) {
-            e.printStackTrace();
+    public int decryptArguments(String keyPhrase){
+        String decryptedTest = Util.decrypt(checkDecryptionString,keyPhrase,initVector);
+        if (decryptedTest == null){
             Toast.makeText(this,"KeyPhrase not correct",Toast.LENGTH_SHORT).show();
-            checkDecryptionResult = "";
-            USER_ID = "";
-            SESSION_ID = "";
-        } catch (Exception e){
-            System.out.println("Error occured: ");
-            e.printStackTrace();
+            return -1;
         }
-
-    }
-
-
-    public static String toHexString(byte[] bytes) {
-        StringBuilder hexString = new StringBuilder();
-        for (byte bByte : bytes) {
-            String hex = Integer.toHexString(0xFF & bByte);
-            if (hex.length() == 1) {
-                hexString.append('0');
-            }
-            hexString.append(hex);
+        byte[] decryptedTestInBytes = decryptedTest.getBytes(StandardCharsets.UTF_8);
+        String decryptedTestMD5 = Util.toHexString(Util.md5hash(Util.md5hash(decryptedTestInBytes)));
+        if (decryptedTestMD5.equals(checkDecryptionSuccess)){
+            USER_ID = Util.decrypt(USER_ID,keyPhrase,initVector);
+            SESSION_ID = Util.decrypt(SESSION_ID,keyPhrase,initVector);
+            SESSION_ID = "sessionid=" + SESSION_ID;
+            checkDecryptionString = decryptedTestMD5;
+            Toast.makeText(this,"KeyPhrase correct",Toast.LENGTH_SHORT).show();
+            return 0;
         }
-        return hexString.toString();
-    }
+        else{
 
+        }
+        return -1;
+    }
 
 }

@@ -17,12 +17,11 @@
             tools:srcCompat="@tools:sample/avatars" />
 
         <LinearLayout
-            android:layout_width="250dp"
+            android:layout_width="261dp"
             android:layout_height="match_parent"
             android:layout_alignParentRight="true"
-            android:layout_marginLeft="151dp"
+            android:layout_marginLeft="120dp"
             android:layout_marginRight="20dp"
-
             android:orientation="vertical">
 
             <TextView
@@ -45,13 +44,13 @@
 
         <ImageView
             android:id="@+id/hasstoryindicator"
-            android:layout_width="30dp"
-            android:layout_height="22dp"
+            android:layout_width="19dp"
+            android:layout_height="24dp"
             android:layout_alignParentStart="true"
             android:layout_alignParentBottom="true"
-            android:layout_marginStart="118dp"
-            android:layout_marginBottom="11dp"
-            app:srcCompat="@android:color/holo_green_light" />
+            android:layout_marginStart="92dp"
+            android:layout_marginBottom="1dp"
+            app:srcCompat="@mipmap/circle" />
 
     </RelativeLayout>
 </LinearLayout>

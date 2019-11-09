@@ -15,16 +15,17 @@
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
+            android:background="@color/lightblack"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
+        <FrameLayout
+            android:id="@+id/content_frame"
+            android:layout_width="match_parent"
+            android:layout_gravity="bottom"
+            android:layout_height="674dp" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <FrameLayout
-        android:id="@+id/content_frame"
-        android:layout_width="match_parent"
-        android:layout_gravity="bottom"
-        android:layout_height="674dp" />
+
 
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
