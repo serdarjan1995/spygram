@@ -3,7 +3,9 @@ package com.ins.spygram;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
@@ -90,6 +92,21 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
     }
 
     public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setMessage("Are you sure you want to exit?")
+                .setCancelable(false)
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        logout();
+                        finishAffinity();
+                    }
+                })
+                .setNegativeButton("No", null)
+                .show();
+
+    }
+
+    public void logout(){
         String urlLogout = getString(R.string.url_host) + getString(R.string.path_logout);
         OkHttpClient client = Util.getHttpClient();
         final Request request = new Request.Builder()
@@ -125,7 +142,6 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
                 }
             }
         });
-        finishAffinity();
     }
 
 }

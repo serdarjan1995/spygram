@@ -8,7 +8,7 @@
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:theme="@style/AppTheme.AppBarOverlay">
 
         <androidx.appcompat.widget.Toolbar
@@ -18,10 +18,14 @@
             android:background="@color/lightblack"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
         <FrameLayout
+            android:id="@+id/ad_view_container"
+            android:layout_width="match_parent"
+            android:layout_height="80dp" />
+        <FrameLayout
             android:id="@+id/content_frame"
             android:layout_width="match_parent"
-            android:layout_gravity="bottom"
-            android:layout_height="674dp" />
+            android:layout_height="match_parent" />
+
 
     </com.google.android.material.appbar.AppBarLayout>
 

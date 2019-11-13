@@ -16,7 +16,12 @@
             android:id="@+id/nav_following"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_following" />
+
     </group>
 
+    <item
+        android:id="@+id/nav_clear_session"
+        android:icon="@drawable/ic_launcher_foreground"
+        android:title="@string/logout_str" />
 
 </menu>

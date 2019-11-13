@@ -50,7 +50,10 @@ public class CustomListview extends ArrayAdapter<String> {
                 .build();
 
         imageLoader = ImageLoader.getInstance();
-        imageLoader.init(config);
+
+        if (!imageLoader.isInited()) {
+            imageLoader.init(config);
+        }
 
     }
 

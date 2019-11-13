@@ -2,9 +2,15 @@ package com.ins.spygram;
 
 import android.util.Base64;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -13,6 +19,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import okhttp3.CertificatePinner;
 import okhttp3.OkHttpClient;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 
 public class Util {
 
@@ -99,4 +107,41 @@ public class Util {
         return client;
     }
 
+
+    public static JSONObject getSuccessfullLoginParams(Response response) throws IOException {
+        JSONObject r_json = new JSONObject();
+        boolean isSuccess = false;
+        ResponseBody responseBody = response.body();
+        try {
+            if (responseBody != null) {
+                JSONObject responseJson = new JSONObject(responseBody.string());
+                if (responseJson.has("logged_in_user")) {
+                    JSONObject jsonLoggedInUser = responseJson.getJSONObject("logged_in_user");
+                    String sessionid = "";
+                    if (!response.headers("Set-Cookie").isEmpty()) {
+
+                        for (String cookies : response.headers("Set-Cookie")) {
+                            if (cookies.contains("sessionid=")) {
+                                Pattern pattern = Pattern.compile("sessionid=(.*?);");
+                                Matcher matcher = pattern.matcher(cookies);
+                                if (matcher.find()) {
+                                    sessionid = matcher.group().replace("sessionid=", "");
+                                    sessionid = sessionid.replace(";", "");
+                                    r_json.put("sessionid", sessionid);
+                                    r_json.put("userid", jsonLoggedInUser.getString("pk"));
+                                    isSuccess = true;
+                                }
+
+                            }
+
+                        }
+                    }
+                }
+            }
+            r_json.put("is_success", isSuccess);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return r_json;
+    }
 }

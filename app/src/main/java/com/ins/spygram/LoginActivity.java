@@ -5,7 +5,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -87,65 +86,60 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
+                backgroundThreadShortToast("Network error");
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
-                    ResponseBody responseBody = response.body();
-                    if (responseBody != null){
-                        try {
-                            JSONObject responseJson = new JSONObject(responseBody.string());
-                            if (responseJson.has("logged_in_user")){
-                                JSONObject jsonLoggedInUser = responseJson.getJSONObject("logged_in_user");
-                                String sessionid = "";
-                                if (!response.headers("Set-Cookie").isEmpty()) {
-
-                                    for (String cookies : response.headers("Set-Cookie")) {
-                                        if (cookies.contains("sessionid=")){
-                                            Pattern pattern = Pattern.compile("sessionid=(.*?);");
-                                            Matcher matcher = pattern.matcher(cookies);
-                                            if (matcher.find()){
-                                                sessionid = matcher.group().replace("sessionid=","");
-                                                sessionid = sessionid.replace(";","");
-                                                isSuccess = true;
-                                                backgroundThreadShortToast("Login success!");
-                                            }
-
-                                        }
-
-                                    }
-
-                                }
-                                if (isSuccess){
-                                    Intent intent = new Intent(LoginActivity.this, SetUpKeyphraseActivity.class);
-                                    Bundle b = new Bundle();
-                                    b.putString("sessionid", sessionid);
-                                    b.putString("userid", jsonLoggedInUser.getString("pk"));
-                                    intent.putExtras(b);
-                                    startActivityForResult(intent, 1);
-                                }
-
-                            }
-
-
-                        } catch (JSONException e) {
-                            e.printStackTrace();
+                    JSONObject r_response = Util.getSuccessfullLoginParams(response);
+                    try {
+                        if(r_response.getBoolean("is_success")){
+                            Intent intent = new Intent(LoginActivity.this, SetUpKeyphraseActivity.class);
+                            Bundle b = new Bundle();
+                            b.putString("sessionid", r_response.getString("sessionid"));
+                            b.putString("userid", r_response.getString("userid"));
+                            intent.putExtras(b);
+                            startActivityForResult(intent, 1);
+                        }
+                        else{
+                            backgroundThreadShortToast("Something went wrong! Error code: 113");
                         }
                     }
-                    else{
-                        backgroundThreadShortToast("Received Empty body from server");
+                    catch(JSONException e){
+                        e.printStackTrace();
                     }
                 }
                 else if (response.code() == 400 && response.body() != null){
-                    JSONObject responseJson = null;
+                    ResponseBody responseBody = response.body();
                     try {
-                        responseJson = new JSONObject(response.body().string());
-                        if (responseJson.has("status") && responseJson.get("status").equals("fail") ){
-                            backgroundThreadShortToast(responseJson.get("message").toString());
-                        }
-                        else{
-                            backgroundThreadShortToast("Something went wrong, status code 400");
+                        if (responseBody != null){
+                            JSONObject responseJson = new JSONObject(responseBody.string());
+                            if (responseJson.has("status") &&
+                                    responseJson.getString("status").equals("fail") &&
+                                    responseJson.has("two_factor_required") &&
+                                    responseJson.getBoolean("two_factor_required")){
+                                JSONObject two_factor_info = responseJson.getJSONObject("two_factor_info");
+                                if (two_factor_info.getBoolean("sms_two_factor_on")){
+                                    Intent intent = new Intent(LoginActivity.this, Activity2FA.class);
+                                    Bundle b = new Bundle();
+                                    b.putString("phone_number", two_factor_info.getString("obfuscated_phone_number"));
+                                    b.putString("identifier", two_factor_info.getString("two_factor_identifier"));
+                                    b.putString("username", two_factor_info.getString("username"));
+                                    intent.putExtras(b);
+                                    startActivityForResult(intent, 2);
+                                }
+                                else if (two_factor_info.getBoolean("totp_two_factor_on")){
+                                    backgroundThreadShortToast("Unfortunately totp 2FA authentication not implemented yet :(");
+                                }
+
+                            }
+                            else if (responseJson.has("status") && responseJson.get("status").equals("fail") ){
+                                backgroundThreadShortToast(responseJson.getString("message"));
+                            }
+                            else{
+                                backgroundThreadShortToast("Something went wrong, status code 400");
+                            }
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
@@ -169,12 +163,22 @@ public class LoginActivity extends AppCompatActivity {
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 1) {
-            if(resultCode == Activity.RESULT_OK){
+            if (resultCode == Activity.RESULT_OK) {
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra("keyphrase", data.getStringExtra("keyphrase"));
                 setResult(Activity.RESULT_OK, resultIntent);
                 finish();
+            }
+        } else if (requestCode == 2) {
+            if (resultCode == Activity.RESULT_OK) {
+                Intent intent = new Intent(LoginActivity.this, SetUpKeyphraseActivity.class);
+                Bundle b = new Bundle();
+                b.putString("sessionid", data.getStringExtra("sessionid"));
+                b.putString("userid", data.getStringExtra("userid"));
+                intent.putExtras(b);
+                startActivityForResult(intent, 1);
             }
         }
     }
