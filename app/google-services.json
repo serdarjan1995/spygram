@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "149578536842",
+    "firebase_url": "https://spygram-f9dda.firebaseio.com",
+    "project_id": "spygram-f9dda",
+    "storage_bucket": "spygram-f9dda.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:149578536842:android:cc3293fe7344f86d609a73",
+        "android_client_info": {
+          "package_name": "com.ins.spygram"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "149578536842-11fmrrrm1no7i433lc8hj96chl69aavr.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB8DRcptXJou2cO87aVh1w1VU1baiN0j_Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "149578536842-11fmrrrm1no7i433lc8hj96chl69aavr.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

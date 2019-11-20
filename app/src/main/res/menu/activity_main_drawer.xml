@@ -9,11 +9,15 @@
             android:icon="@drawable/ic_menu_manage"
             android:title="@string/menu_key" />
         <item
+            android:id="@+id/nav_story_reels"
+            android:icon="@drawable/ic_menu_slideshow"
+            android:title="@string/menu_story_reels" />
+        <item
             android:id="@+id/nav_followers"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_followers" />
         <item
-            android:id="@+id/nav_following"
+            android:id="@+id/nav_followees"
             android:icon="@drawable/ic_menu_gallery"
             android:title="@string/menu_following" />
 

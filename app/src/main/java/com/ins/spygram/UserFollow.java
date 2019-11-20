@@ -1,17 +1,19 @@
 package com.ins.spygram;
 
-public class UserFollower {
+public class UserFollow {
 
     private String userId;
     private String username;
     private String pp_url;
     private String full_name;
+    private long latest_reel_media;
 
-    public UserFollower(String userId,String username, String pp_url, String full_name){
+    public UserFollow(String userId, String username, String pp_url, String full_name, long latest_reel_media){
         this.userId = userId;
         this.username = username;
         this.pp_url = pp_url;
         this.full_name = full_name;
+        this.latest_reel_media = latest_reel_media;
     }
 
     public String getFull_name() {
@@ -49,5 +51,13 @@ public class UserFollower {
     @Override
     public String toString() {
         return "username: " + getUsername() + " user_id: " +getUserId();
+    }
+
+    public long getLatest_reel_media() {
+        return latest_reel_media;
+    }
+
+    public void setLatest_reel_media(long latest_reel_media) {
+        this.latest_reel_media = latest_reel_media;
     }
 }

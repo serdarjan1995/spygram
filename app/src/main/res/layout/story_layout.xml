@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:attrs="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical" android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:id="@+id/relativeLayout">
 
-
     <androidx.viewpager.widget.ViewPager
-        android:id="@+id/ViewPagerStoryImages"
+        android:id="@+id/ViewPagerStory"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
@@ -16,25 +16,22 @@
         tools:layout_conversion_absoluteHeight="695dp"
         tools:layout_conversion_absoluteWidth="411dp"
         tools:layout_editor_absoluteX="0dp"
-        tools:layout_editor_absoluteY="296dp">
+        tools:layout_editor_absoluteY="296dp"/>
 
-
-    </androidx.viewpager.widget.ViewPager>
-
-    <steelkiwi.com.library.view.IndicatorView
+    <com.rd.PageIndicatorView
         android:id="@+id/indicatorView"
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="76dp"
-        app:iv_action="hung_down"
-        app:iv_bar_color="@android:color/black"
-        app:iv_corner_radius="4dp"
-        app:iv_idle_color="#999999"
-        app:iv_item_amount="3"
-        app:iv_select_color="#666666"
-        app:iv_size="20dp"
-        app:iv_text_color="@android:color/white"
-        app:iv_text_size="8sp" />
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="20dp"
+        app:piv_animationType="worm"
+        app:piv_dynamicCount="true"
+        app:piv_interactiveAnimation="true"
+        app:piv_selectedColor="@color/gray_50"
+        app:piv_unselectedColor="@color/gray_300"
+        app:piv_viewPager="@id/ViewPagerStory"
+        attrs:piv_padding="12dp"
+        attrs:piv_radius="8dp" />
+
 </RelativeLayout>

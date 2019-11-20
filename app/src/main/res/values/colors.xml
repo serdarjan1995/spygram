@@ -5,4 +5,6 @@
     <color name="colorPrimaryMagenta">#921341</color>
     <color name="black">#000000</color>
     <color name="lightblack">#111111</color>
+    <color name="gray_50">#ECFAFAFA</color>
+    <color name="gray_300">#8CE0E0E0</color>
 </resources>

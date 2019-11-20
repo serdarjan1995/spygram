@@ -10,7 +10,7 @@
     <string name="menu_key">Set Key</string>
     <string name="menu_followers">Followers</string>
     <string name="menu_following">Followees</string>
-    <string name="menu_slideshow">Slideshow</string>
+    <string name="menu_story_reels">Story reels</string>
     <string name="menu_tools">Tools</string>
     <string name="menu_share">Share</string>
     <string name="menu_send">Send</string>
@@ -21,8 +21,10 @@
     <string name="path_logout">/api/v1/accounts/logout/</string>
     <string name="path_login">/api/v1/accounts/login/</string>
     <string name="path_login_2fa">/api/v1/accounts/two_factor_login/</string>
+    <string name="path_reels_tray">/api/v1/feed/reels_tray/</string>
     <string name="content_type">Application/x-www-form-urlencoded</string>
     <string name="user_agent">Instagram 99.0.0.32.182 Android</string>
+    <string name="url_pp_download">https://instadp-cors-222621.appspot.com/get-hd?id=</string>
     <string name="sign_in">Sign in</string>
     <string name="password">Password</string>
     <string name="username">Username</string>
@@ -34,5 +36,30 @@
     <string name="logout_str">Log out | Clear Session</string>
     <string name="banner_unit_id">ca-app-pub-3940256099942544/6300978111</string>
     <string name="native_ad_unit_id">ca-app-pub-3940256099942544/2247696110</string>
+    <string name="banner_unit_id2">ca-app-pub-2181561381492488/4184114792</string>
+    <string name="native_ad_unit_id2">ca-app-pub-2181561381492488/8025773996</string>
     <string name="ad_attribution">Ad</string>
+    <string name="keyphrase_error_msg">Please check your keyphrase. It is incorrect</string>
+    <string name="keyphrase_empty">Please enter your passphrase</string>
+    <string name="keyphrase_wrong">Keyphrase you entered is not correct</string>
+    <string name="keyphrase_right">Correct keyphrase</string>
+    <string name="version_check_error_msg">Could not check app version :(</string>
+    <string name="new_version_available">A new version of this app is available. Please update it</string>
+    <string name="msg_update_pls">Please Update the App</string>
+    <string name="no_story">Can not access to stories of this user</string>
+    <string name="ok">Ok</string>
+    <string name="exit">Exit</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="exit_confirm_msg">Are you sure you want to exit?</string>
+    <string name="clear_session_msg">Login credentials will be removed. Are you sure?</string>
+    <string name="clear_session_logout">Your session invalidated and destroyed</string>
+    <string name="clear_session_destroy">Your session data removed</string>
+    <string name="all_right">All right!</string>
+    <string name="smth_wrong">Something went wrong :( Please try again</string>
+    <string name="fields_empty">You did not enter mandatory fields</string>
+    <string name="totp_not_supported">Unfortunately totp 2FA authentication not implemented yet :(</string>
+    <string name="enter_ver_code">Please enter your verification code</string>
+    <string name="net_err">Network error</string>
+    <string name="download">Download</string>
 </resources>

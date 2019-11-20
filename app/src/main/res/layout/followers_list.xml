@@ -1,56 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="100dp">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="100dp">
+    <ImageView
+        android:id="@+id/avatar"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_marginLeft="15dp"
+        tools:srcCompat="@tools:sample/avatars" />
 
-        <ImageView
-            android:id="@+id/avatar"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:layout_marginLeft="15dp"
-            tools:srcCompat="@tools:sample/avatars" />
 
-        <LinearLayout
-            android:layout_width="261dp"
-            android:layout_height="match_parent"
-            android:layout_alignParentRight="true"
-            android:layout_marginLeft="120dp"
-            android:layout_marginRight="20dp"
-            android:orientation="vertical">
 
-            <TextView
-                android:id="@+id/text_view_name"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="username"
-                android:textSize="18sp"
-                android:textStyle="bold|italic" />
+    <ImageView
+        android:id="@+id/hasstoryindicator"
+        android:layout_width="19dp"
+        android:layout_height="24dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentBottom="true"
+        android:layout_marginStart="90dp"
+        android:layout_marginBottom="5dp"
+        app:srcCompat="@mipmap/circle" />
 
-            <TextView
-                android:id="@+id/text_view_username"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                android:text="name"
-                android:textSize="24sp" />
-        </LinearLayout>
+    <ImageView
+        android:id="@+id/download_pp_button"
+        android:layout_width="17dp"
+        android:layout_height="23dp"
+        android:layout_alignParentStart="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="92dp"
+        android:layout_marginTop="5dp"
+        android:alpha="0.65"
+        android:background="#00FFFFFF"
+        android:scaleType="fitCenter"
+        android:visibility="visible"
+        app:srcCompat="@mipmap/download_icon" />
 
-        <ImageView
-            android:id="@+id/hasstoryindicator"
-            android:layout_width="19dp"
-            android:layout_height="24dp"
-            android:layout_alignParentStart="true"
-            android:layout_alignParentBottom="true"
-            android:layout_marginStart="92dp"
-            android:layout_marginBottom="1dp"
-            app:srcCompat="@mipmap/circle" />
+    <LinearLayout
+        android:layout_width="261dp"
+        android:layout_height="match_parent"
+        android:layout_alignParentRight="true"
+        android:layout_marginLeft="120dp"
+        android:layout_marginRight="20dp"
 
-    </RelativeLayout>
-</LinearLayout>
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/text_view_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="username"
+            android:textSize="18sp"
+            android:textStyle="bold|italic" />
+
+        <TextView
+            android:id="@+id/text_view_username"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="name"
+            android:textSize="24sp" />
+    </LinearLayout>
+
+</RelativeLayout>

@@ -2,14 +2,24 @@ package com.ins.spygram;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
+
+import androidx.annotation.NonNull;
 import androidx.core.view.GravityCompat;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import android.view.MenuItem;
@@ -28,12 +38,19 @@ import com.google.android.gms.ads.formats.UnifiedNativeAd;
 import com.google.android.gms.ads.formats.UnifiedNativeAdView;
 import com.google.android.gms.ads.initialization.InitializationStatus;
 import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
+import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
+import com.onesignal.OneSignal;
+
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
 import android.view.Menu;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
@@ -50,7 +67,7 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Locale;
+import java.util.HashMap;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -62,7 +79,6 @@ import okhttp3.ResponseBody;
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
-    private ArrayList<UserFollower> followers;
     private String USER_ID;
     private String SESSION_ID;
     private FragmentManager fragmentManager;
@@ -73,6 +89,10 @@ public class MainActivity extends AppCompatActivity
     private String initVector;
     private AdView bannerAdView;
     private UnifiedNativeAd nativeAd;
+    private boolean loggedOut = false;
+    private FirebaseRemoteConfig firebaseRemoteConfig;
+    final String VERSION_CODE_KEY = "version_code";
+    final String UPDATE_URL = "update_url";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,12 +108,57 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
+        NotificationManager nm =(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (nm != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            CharSequence name = getString(R.string.app_name);
+            String Description = "Spygram notification channel";
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel mChannel = new NotificationChannel(Util.NOTIFICATION_CHANNEL_ID, name, importance);
+            mChannel.setDescription(Description);
+            mChannel.enableLights(true);
+            mChannel.setLightColor(Color.GRAY);
+            mChannel.enableVibration(false);
+            mChannel.setSound(null, null);
+            mChannel.setShowBadge(false);
+            nm.createNotificationChannel(mChannel);
+        }
+
+
+        //force update
+        firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
+        HashMap<String, Object> remoteConfigDefaults = new HashMap<>();
+        remoteConfigDefaults.put(VERSION_CODE_KEY, BuildConfig.VERSION_CODE);
+        firebaseRemoteConfig.setDefaultsAsync(remoteConfigDefaults);
+        firebaseRemoteConfig.setConfigSettingsAsync(new FirebaseRemoteConfigSettings.Builder()
+                        .setMinimumFetchIntervalInSeconds(30).build());
+
+        firebaseRemoteConfig.fetch().addOnCompleteListener(new OnCompleteListener<Void>() {
+                    @Override
+                    public void onComplete(@NonNull Task<Void> task) {
+                        if (task.isSuccessful()) {
+                            firebaseRemoteConfig.activate();
+                            checkForUpdate();
+                        }
+                        else{
+                            toastMsg(getString(R.string.version_check_error_msg));
+                        }
+                    }
+                });
+
+
+        // OneSignal Initialization
+        OneSignal.startInit(this)
+                .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
+                .unsubscribeWhenNotificationsAreDisabled(true)
+                .init();
+
 
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
             }
         });
+
         FrameLayout adContainerView = findViewById(R.id.ad_view_container);
         bannerAdView = new AdView(this);
         bannerAdView.setAdUnitId(getString(R.string.banner_unit_id));
@@ -107,13 +172,50 @@ public class MainActivity extends AppCompatActivity
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
         loadNativeAd();
         loadBanner();
+        Util.checkPermission(this);
         getSharedPreferencesValues();
+    }
+
+    private void checkForUpdate() {
+        int latestAppVersion = (int) firebaseRemoteConfig.getDouble(VERSION_CODE_KEY);
+        final String update_url = firebaseRemoteConfig.getString(UPDATE_URL);
+        if (latestAppVersion > BuildConfig.VERSION_CODE) {
+            new AlertDialog.Builder(this).setTitle(getString(R.string.msg_update_pls))
+                    .setMessage(getString(R.string.new_version_available))
+                    .setPositiveButton( getString(R.string.ok),
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+
+                                    final String appPackageName = getPackageName();
+                                    try {
+                                        Intent intent = new Intent(Intent.ACTION_VIEW,
+                                                Uri.parse("market://details?id=" + appPackageName));
+                                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                        startActivity(intent);
+                                        finish();
+
+                                    } catch (android.content.ActivityNotFoundException e) {
+                                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(update_url)));
+                                        finish();
+                                    }
+                            }
+                    })
+                    .setNegativeButton(getString(R.string.exit),
+                            new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialogInterface, int i) {
+                                    finish();
+                            }
+                    })
+                    .setCancelable(false).show();
+        }
     }
 
     private void loadBanner() {
         AdRequest adRequest =
-                new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039")
-                        .build();
+                new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build();
 
         AdSize adSize = getAdSize();
         if (bannerAdView.getAdSize() == null){
@@ -303,6 +405,19 @@ public class MainActivity extends AppCompatActivity
     }
 
 
+    public void onRequestPermissionsResult(int requestCode,
+                                           String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case 1: {
+                if (grantResults.length == 0
+                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    backgroundThreadShortToast("WRITE permissions needed to download content.");
+                }
+                break;
+            }
+        }
+    }
+
 
 
     @Override
@@ -318,7 +433,7 @@ public class MainActivity extends AppCompatActivity
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.main, menu);
+        //getMenuInflater().inflate(R.menu.download_pp_menu, menu);
         return true;
     }
 
@@ -341,39 +456,44 @@ public class MainActivity extends AppCompatActivity
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+        loadBanner();
         switch (id){
             case R.id.nav_key:
                 fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
                 refreshAd();
-                loadBanner();
+                break;
+            case R.id.nav_story_reels:
+                if( checkDecryptionString.equals(checkDecryptionSuccess)){
+                    fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment).commit();
+                    getStoryReels();
+                }
+                else {
+                    toastMsg(getString(R.string.keyphrase_error_msg));
+                }
                 break;
             case R.id.nav_followers:
-                loadBanner();
                 if( checkDecryptionString.equals(checkDecryptionSuccess)){
                     fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment).commit();
-                    followers = getFollows(USER_ID,1);
+                    getFollows(USER_ID,1);
                 }
                 else{
-                    Toast.makeText(this,"Please check your keyphrase. It is incorrect",
-                            Toast.LENGTH_SHORT).show();
+                    toastMsg(getString(R.string.keyphrase_error_msg));
                 }
                 break;
-            case R.id.nav_following:
-                loadBanner();
+            case R.id.nav_followees:
                 if( checkDecryptionString.equals(checkDecryptionSuccess)){
                     fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment).commit();
-                    followers = getFollows(USER_ID,2);
+                    getFollows(USER_ID,2);
                 }
                 else{
-                    Toast.makeText(this,"Please check your keyphrase. It is incorrect",
-                            Toast.LENGTH_SHORT).show();
+                    toastMsg(getString(R.string.keyphrase_error_msg));
                 }
                 break;
             case R.id.nav_clear_session:
                 new AlertDialog.Builder(this)
-                        .setMessage("Login credentials will be removed. Are you sure?")
+                        .setMessage(getString(R.string.clear_session_msg))
                         .setCancelable(true)
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        .setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                             public void onClick(DialogInterface dialog, int id) {
                                 if( checkDecryptionString.equals(checkDecryptionSuccess)){
                                     logout();
@@ -383,15 +503,20 @@ public class MainActivity extends AppCompatActivity
                                 SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
                                 sharedPreferencesEditor.clear();
                                 sharedPreferencesEditor.apply();
-                                Toast.makeText(getApplicationContext(), "Your session invalidated",
-                                        Toast.LENGTH_SHORT).show();
+                                if (loggedOut){
+                                    Toast.makeText(getApplicationContext(), getString(R.string.clear_session_logout),
+                                            Toast.LENGTH_SHORT).show();
+                                }else{
+                                    Toast.makeText(getApplicationContext(), getString(R.string.clear_session_destroy),
+                                            Toast.LENGTH_SHORT).show();
+                                }
+
                                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                                 startActivityForResult(intent,0);
                             }
                         })
-                        .setNegativeButton("No", null)
+                        .setNegativeButton(getString(R.string.no), null)
                         .show();
-
                 break;
         }
 
@@ -404,9 +529,15 @@ public class MainActivity extends AppCompatActivity
         EditText text = findViewById(R.id.setkeyphrasetext);
         int status = decryptArguments(text.getText().toString());
         if (status == 0){
+            InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null){
+                imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+            }
+            v.clearFocus();
             fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
                     .commitAllowingStateLoss();
-            followers = getFollows(USER_ID,2);
+            getStoryReels();
+
         }
     }
 
@@ -419,17 +550,17 @@ public class MainActivity extends AppCompatActivity
                     getSharedPreferencesValues();
                     int status = decryptArguments(keyphrase);
                     if (status == 0) {
-                        Toast.makeText(this, "All done", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, getString(R.string.all_right), Toast.LENGTH_SHORT).show();
                         fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
                                 .commitAllowingStateLoss();
-                        followers = getFollows(USER_ID, 2);
+                        getFollows(USER_ID, 2);
                     }
                 }
             }
         }
     }
 
-    public ArrayList <UserFollower> getFollows(String id, int followType){
+    public void getFollows(String id, int followType){
         OkHttpClient client = Util.getHttpClient();
         String url;
         if (followType == 1){
@@ -441,17 +572,15 @@ public class MainActivity extends AppCompatActivity
             url = String.format(url,id);
         }
 
-        final ArrayList <UserFollower> userFollowerArrayList = new ArrayList<>();
-        Request request = new Request.Builder()
-                .url(url)
-                .header("User-Agent", getString(R.string.user_agent))
-                .addHeader("Cookie", SESSION_ID)
-                .addHeader("Content-Type", getString(R.string.content_type))
-                .build();
+        final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
+        Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
+                getString(R.string.content_type)).build();
+
 
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                backgroundThreadShortToast(getString(R.string.net_err));
                 e.printStackTrace();
             }
 
@@ -464,8 +593,7 @@ public class MainActivity extends AppCompatActivity
                         followers_response = responseBody.string();
                     }
                     else{
-                        Toast.makeText(getApplicationContext(),"Received Empty body from server",
-                                Toast.LENGTH_SHORT).show();
+                        backgroundThreadShortToast(getString(R.string.smth_wrong));
                         return;
                     }
 
@@ -481,25 +609,28 @@ public class MainActivity extends AppCompatActivity
                                 String username;
                                 String pp_url;
                                 String full_name;
+                                long latest_reel_media;
                                 JSONObject user;
-                                UserFollower userFollower;
+                                UserFollow userFollow;
                                 for (int i = 0; i < users.length(); i++) {
                                     user = users.getJSONObject(i);
                                     userId = Long.toString(user.getLong("pk"));
                                     username = user.getString("username");
                                     pp_url = user.getString("profile_pic_url");
                                     full_name = user.getString("full_name");
-                                    userFollower = new UserFollower(userId,username,pp_url,full_name);
-                                    userFollowerArrayList.add(userFollower);
+                                    latest_reel_media = user.getLong("latest_reel_media");
+                                    userFollow = new UserFollow(userId,username,pp_url,full_name,latest_reel_media);
+                                    userFollowArrayList.add(userFollow);
                                 }
 
-                                CustomListview customListview = new CustomListview(MainActivity.this,followers);
+                                CustomListView customListview = new CustomListView(MainActivity.this,
+                                        userFollowArrayList, false);
                                 ListView lst = findViewById(R.id.listview_followers);
                                 lst.setAdapter(customListview);
                                 lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                     @Override
                                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                        getStoryOfUser(followers.get(i).getUserId());
+                                        getStoryOfUser(userFollowArrayList.get(i).getUserId());
                                     }
                                 });
 
@@ -508,18 +639,15 @@ public class MainActivity extends AppCompatActivity
                                 e.printStackTrace();
                             }
                             catch (Exception e) {
-                                System.out.println("General Error occured: ");
+                                Log.e("ERROR","General error occurred. ");
                                 e.printStackTrace();
                             }
                         }
                     });
 
-
                 }
             }
         });
-
-        return userFollowerArrayList;
     }
 
 
@@ -527,17 +655,14 @@ public class MainActivity extends AppCompatActivity
         OkHttpClient client = Util.getHttpClient();
         String url = getString(R.string.url_host) + getString(R.string.path_get_story);
         url = String.format(url,userId);
-        final Request request = new Request.Builder()
-                .url(url)
-                .header("User-Agent", getString(R.string.user_agent))
-                .addHeader("Cookie", SESSION_ID)
-                .addHeader("Content-Type", getString(R.string.content_type))
-                .build();
+        final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
+                getString(R.string.content_type)).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
+                backgroundThreadShortToast(getString(R.string.net_err));
             }
 
             @Override
@@ -549,10 +674,22 @@ public class MainActivity extends AppCompatActivity
                         responseGetStory = responseBody.string();
                     }
                     else{
-                        Toast.makeText(getApplicationContext(),"Received Empty body from server",
-                                Toast.LENGTH_SHORT).show();
+                        toastMsg(getString(R.string.smth_wrong));
                         return;
                     }
+
+                    JSONObject json;
+                    try {
+                        json = new JSONObject(responseGetStory);
+                        if (json.has("reel") && json.isNull("reel")) {
+                            backgroundThreadShortToast(getString(R.string.no_story));
+                            return;
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
@@ -563,6 +700,76 @@ public class MainActivity extends AppCompatActivity
                             startActivity(intent);
                         }
                     });
+                }
+            }
+        });
+    }
+
+    public void getStoryReels(){
+        final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
+        String url = getString(R.string.url_host) + getString(R.string.path_reels_tray);
+        OkHttpClient client = Util.getHttpClient();
+        final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                getString(R.string.user_agent),
+                getString(R.string.content_type))
+                .post(new okhttp3.FormBody.Builder().build())
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                e.printStackTrace();
+                backgroundThreadShortToast(getString(R.string.net_err));
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
+                if(response.isSuccessful()){
+                    final ResponseBody responseBody = response.body();
+                    if (responseBody != null){
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    JSONObject responseJson = new JSONObject(responseBody.string());
+                                    if (responseJson.has("status") &&
+                                            responseJson.getString("status").equals("ok") &&
+                                            responseJson.has("status")) {
+                                        JSONArray tray = responseJson.getJSONArray("tray");
+                                        String userId;
+                                        String username;
+                                        String pp_url;
+                                        String full_name;
+                                        JSONObject user;
+                                        UserFollow userFollow;
+                                        for (int i = 0; i < tray.length(); i++) {
+                                            user = tray.getJSONObject(i).getJSONObject("user");
+                                            userId = Long.toString(user.getLong("pk"));
+                                            username = user.getString("username");
+                                            pp_url = user.getString("profile_pic_url");
+                                            full_name = user.getString("full_name");
+                                            userFollow = new UserFollow(userId, username, pp_url, full_name, 0);
+                                            userFollowArrayList.add(userFollow);
+                                        }
+                                        CustomListView customListview = new CustomListView(MainActivity.this,
+                                                userFollowArrayList, true);
+                                        ListView lst = findViewById(R.id.listview_followers);
+                                        lst.setAdapter(customListview);
+                                        lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                            @Override
+                                            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                                                getStoryOfUser(userFollowArrayList.get(i).getUserId());
+                                            }
+                                        });
+
+                                    }
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+
+                            }
+                        });
+                    }
                 }
             }
         });
@@ -596,7 +803,7 @@ public class MainActivity extends AppCompatActivity
     public int decryptArguments(String keyPhrase){
         String decryptedTest = Util.decrypt(checkDecryptionString,keyPhrase,initVector);
         if (decryptedTest == null){
-            Toast.makeText(this,"KeyPhrase not correct",Toast.LENGTH_SHORT).show();
+            toastMsg(getString(R.string.keyphrase_wrong));
             return -1;
         }
         byte[] decryptedTestInBytes = decryptedTest.getBytes(StandardCharsets.UTF_8);
@@ -606,12 +813,28 @@ public class MainActivity extends AppCompatActivity
             SESSION_ID = Util.decrypt(SESSION_ID,keyPhrase,initVector);
             SESSION_ID = "sessionid=" + SESSION_ID;
             checkDecryptionString = decryptedTestMD5;
-            Toast.makeText(this,"KeyPhrase correct",Toast.LENGTH_SHORT).show();
+            toastMsg(getString(R.string.keyphrase_right));
             return 0;
         }
         return -1;
     }
 
+
+    public void toastMsg(String message){
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    public void backgroundThreadShortToast(final String msg) {
+        final Context context = getApplicationContext();
+        if (context != null && msg != null) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
 
     public void logout(){
         String urlLogout = getString(R.string.url_host) + getString(R.string.path_logout);
@@ -628,6 +851,7 @@ public class MainActivity extends AppCompatActivity
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
+                loggedOut = false;
             }
 
             @Override
@@ -639,6 +863,8 @@ public class MainActivity extends AppCompatActivity
                             JSONObject responseJson = new JSONObject(responseBody.string());
                             if (responseJson.has("status") &&
                                     responseJson.getString("status").equals("ok")){
+                                loggedOut = true;
+
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();

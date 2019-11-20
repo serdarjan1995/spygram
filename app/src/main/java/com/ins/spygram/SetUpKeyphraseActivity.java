@@ -9,6 +9,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Base64;
 import android.view.View;
 import android.widget.Button;
@@ -20,7 +22,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
@@ -28,7 +29,6 @@ import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
-import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -53,8 +53,7 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
             public void onClick(View view) {
                 String keyphrase = keyphraseEditText.getText().toString();
                 if (keyphrase.equals("")){
-                    Toast.makeText(getApplicationContext(), "Please enter your passphrase",
-                            Toast.LENGTH_SHORT).show();
+                    toastMsg(getString(R.string.keyphrase_empty));
                 }
                 else{
                     Random random = new Random();
@@ -93,15 +92,15 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
 
     public void onBackPressed() {
         new AlertDialog.Builder(this)
-                .setMessage("Are you sure you want to exit?")
+                .setMessage(getString(R.string.exit_confirm_msg))
                 .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                .setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         logout();
                         finishAffinity();
                     }
                 })
-                .setNegativeButton("No", null)
+                .setNegativeButton(getString(R.string.no), null)
                 .show();
 
     }
@@ -109,11 +108,9 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
     public void logout(){
         String urlLogout = getString(R.string.url_host) + getString(R.string.path_logout);
         OkHttpClient client = Util.getHttpClient();
-        final Request request = new Request.Builder()
-                .url(urlLogout)
-                .header("User-Agent", getString(R.string.user_agent))
-                .addHeader("Cookie", sessionid)
-                .addHeader("Content-Type", getString(R.string.content_type))
+        final Request request = Util.getRequestHeaderBuilder(urlLogout, sessionid,
+                                    getString(R.string.user_agent),
+                                    getString(R.string.content_type))
                 .post(new okhttp3.FormBody.Builder().build())
                 .build();
 
@@ -132,8 +129,7 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
                             JSONObject responseJson = new JSONObject(responseBody.string());
                             if (responseJson.has("status") &&
                                     responseJson.getString("status").equals("ok")){
-                                Toast.makeText(getApplicationContext(), "Your session invalidated",
-                                        Toast.LENGTH_SHORT).show();
+                                backgroundThreadShortToast(getString(R.string.clear_session_logout));
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -142,6 +138,22 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    public void backgroundThreadShortToast(final String msg) {
+        final Context context = getApplicationContext();
+        if (context != null && msg != null) {
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+    }
+
+    public void toastMsg(String message){
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
 }

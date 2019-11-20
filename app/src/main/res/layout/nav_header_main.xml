@@ -18,7 +18,8 @@
         android:layout_height="75dp"
         android:contentDescription="@string/nav_header_desc"
         android:paddingTop="@dimen/nav_header_vertical_spacing"
-        app:srcCompat="@mipmap/icon2" />
+        android:scaleType="centerCrop"
+        app:srcCompat="@mipmap/icon" />
 
     <TextView
         android:layout_width="104dp"

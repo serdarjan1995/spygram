@@ -5,7 +5,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".MainActivity"
     >
 
@@ -18,7 +17,7 @@
         android:layout_marginTop="18dp"
         android:layout_marginBottom="8dp"
         android:onClick="onClickKeypassBtn"
-        android:text="Set Keyphrase" />
+        android:text="@string/set_keyphrase" />
 
     <EditText
         android:id="@+id/setkeyphrasetext"
@@ -29,7 +28,7 @@
         android:layout_marginTop="41dp"
         android:layout_marginBottom="8dp"
         android:ems="10"
-        android:hint="Keyphrase"
+        android:hint="@string/keyphrase"
         android:inputType="textPassword" />
 
     <FrameLayout

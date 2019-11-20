@@ -54,8 +54,7 @@ public class Activity2FA extends AppCompatActivity {
                     public void onClick(View view) {
                         String code2fa = code_2faEditText.getText().toString();
                         if (code2fa.equals("")){
-                            Toast.makeText(getApplicationContext(), "Please enter your verification code",
-                                    Toast.LENGTH_SHORT).show();
+                            toastMsg(getString(R.string.enter_ver_code));
                         }
                         else{
                             String urlLogin2Fa = getString(R.string.url_host) + getString(R.string.path_login_2fa);
@@ -70,14 +69,10 @@ public class Activity2FA extends AppCompatActivity {
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
-                            RequestBody requestBody = new okhttp3.FormBody.Builder()
-                                    .add("signed_body", "." + json.toString())
-                                    .add("ig_sig_key_version","4")
-                                    .build();
-                            final Request request = new Request.Builder()
-                                    .url(urlLogin2Fa)
-                                    .header("User-Agent", getString(R.string.user_agent))
-                                    .addHeader("Content-Type", getString(R.string.content_type))
+                            RequestBody requestBody = Util.getRequestBody(json);
+                            final Request request = Util.getRequestHeaderBuilder(urlLogin2Fa, "",
+                                    getString(R.string.user_agent),
+                                    getString(R.string.content_type))
                                     .post(requestBody)
                                     .build();
 
@@ -85,13 +80,13 @@ public class Activity2FA extends AppCompatActivity {
                                 @Override
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
                                     e.printStackTrace();
-                                    backgroundThreadShortToast("Network error");
+                                    backgroundThreadShortToast(getString(R.string.net_err));
                                 }
 
                                 @Override
                                 public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                                     if(response.isSuccessful()) {
-                                        JSONObject r_response = Util.getSuccessfullLoginParams(response);
+                                        JSONObject r_response = Util.getSuccessfulLoginParams(response);
                                         try {
                                             if(r_response.getBoolean("is_success")){
                                                 Intent resultIntent = new Intent();
@@ -101,7 +96,8 @@ public class Activity2FA extends AppCompatActivity {
                                                 finish();
                                             }
                                             else{
-                                                backgroundThreadShortToast("Something went wrong! Error code: 113");
+                                                backgroundThreadShortToast(getString(R.string.smth_wrong)
+                                                        + " Error code: 113");
                                             }
                                         }
                                         catch(JSONException e){
@@ -118,7 +114,8 @@ public class Activity2FA extends AppCompatActivity {
                                                     backgroundThreadShortToast(responseJson.getString("message"));
                                                 }
                                                 else{
-                                                    backgroundThreadShortToast("Something went wrong, status code 401");
+                                                    backgroundThreadShortToast(getString(R.string.smth_wrong)
+                                                            + " Error code: 401");
                                                 }
                                             }
                                         } catch (JSONException e) {
@@ -133,8 +130,7 @@ public class Activity2FA extends AppCompatActivity {
                 });
             }
             else{
-                Toast.makeText(getApplicationContext(), "Something went wrong. Error code 114",
-                        Toast.LENGTH_SHORT).show();
+                toastMsg(getString(R.string.smth_wrong) + " Error code: 114");
             }
 
         }
@@ -156,15 +152,19 @@ public class Activity2FA extends AppCompatActivity {
 
     public void onBackPressed() {
         new AlertDialog.Builder(this)
-                .setMessage("Are you sure you want to exit?")
+                .setMessage(getString(R.string.exit_confirm_msg))
                 .setCancelable(false)
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                .setPositiveButton(getString(R.string.yes), new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         finishAffinity();
                     }
                 })
-                .setNegativeButton("No", null)
+                .setNegativeButton(getString(R.string.no), null)
                 .show();
 
+    }
+
+    public void toastMsg(String message){
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

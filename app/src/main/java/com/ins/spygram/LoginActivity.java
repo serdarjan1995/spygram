@@ -17,8 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -33,7 +32,6 @@ public class LoginActivity extends AppCompatActivity {
     private EditText passwordEditText;
     private String username;
     private String password;
-    private boolean isSuccess = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,7 +46,7 @@ public class LoginActivity extends AppCompatActivity {
                 username = usernameEditText.getText().toString();
                 password = passwordEditText.getText().toString();
                 if (username.matches("") || password.matches("")) {
-                    Toast.makeText(getApplicationContext(), "You did not enter mandatory fields", Toast.LENGTH_SHORT).show();
+                    toastMsg(getString(R.string.fields_empty));
                 }
                 else{
                     JSONObject json = new JSONObject();
@@ -70,15 +68,20 @@ public class LoginActivity extends AppCompatActivity {
 
     private void loginTry(JSONObject json){
         String urlLogin = getString(R.string.url_host) + getString(R.string.path_login);
-        OkHttpClient client = Util.getHttpClient();
-        RequestBody requestBody = new okhttp3.FormBody.Builder()
-                .add("signed_body", "." + json.toString())
-                .add("ig_sig_key_version","4")
-                .build();
-        final Request request = new Request.Builder()
-                .url(urlLogin)
-                .header("User-Agent", getString(R.string.user_agent))
-                .addHeader("Content-Type", getString(R.string.content_type))
+        OkHttpClient client;
+        RequestBody requestBody;
+        try {
+            client = Util.getHttpClient();
+            requestBody = Util.getRequestBody(json);
+
+        }
+        catch (Exception e){
+            backgroundThreadShortToast(getString(R.string.net_err));
+            return;
+        }
+        final Request request = Util.getRequestHeaderBuilder(urlLogin, "",
+                getString(R.string.user_agent),
+                getString(R.string.content_type))
                 .post(requestBody)
                 .build();
 
@@ -86,13 +89,13 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
-                backgroundThreadShortToast("Network error");
+                backgroundThreadShortToast(getString(R.string.net_err));
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
-                    JSONObject r_response = Util.getSuccessfullLoginParams(response);
+                    JSONObject r_response = Util.getSuccessfulLoginParams(response);
                     try {
                         if(r_response.getBoolean("is_success")){
                             Intent intent = new Intent(LoginActivity.this, SetUpKeyphraseActivity.class);
@@ -103,7 +106,7 @@ public class LoginActivity extends AppCompatActivity {
                             startActivityForResult(intent, 1);
                         }
                         else{
-                            backgroundThreadShortToast("Something went wrong! Error code: 113");
+                            backgroundThreadShortToast(getString(R.string.smth_wrong) + " Error code: 113");
                         }
                     }
                     catch(JSONException e){
@@ -130,7 +133,7 @@ public class LoginActivity extends AppCompatActivity {
                                     startActivityForResult(intent, 2);
                                 }
                                 else if (two_factor_info.getBoolean("totp_two_factor_on")){
-                                    backgroundThreadShortToast("Unfortunately totp 2FA authentication not implemented yet :(");
+                                    backgroundThreadShortToast(getString(R.string.totp_not_supported));
                                 }
 
                             }
@@ -138,7 +141,7 @@ public class LoginActivity extends AppCompatActivity {
                                 backgroundThreadShortToast(responseJson.getString("message"));
                             }
                             else{
-                                backgroundThreadShortToast("Something went wrong, status code 400");
+                                backgroundThreadShortToast(getString(R.string.smth_wrong) + " status code 400");
                             }
                         }
                     } catch (JSONException e) {
@@ -185,5 +188,9 @@ public class LoginActivity extends AppCompatActivity {
 
     public void onBackPressed() {
         finishAffinity();
+    }
+
+    public void toastMsg(String message){
+        Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 }

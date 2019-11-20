@@ -3,6 +3,8 @@
     package="com.ins.spygram">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 
     <application
         android:allowBackup="true"
@@ -15,7 +17,7 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-2181561381492488~2288563289"/>
-        <activity android:name=".Activity2FA"></activity>
+        <activity android:name=".Activity2FA"/>
         <activity android:name=".SetUpKeyphraseActivity" />
         <activity android:name=".LoginActivity" />
         <activity android:name=".StoryViewer" />
@@ -25,10 +27,19 @@
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
+                <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name=".GenericFileProvider"
+            android:authorities="${applicationId}.mfileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/provider_path"/>
+        </provider>
     </application>
 
 </manifest>
