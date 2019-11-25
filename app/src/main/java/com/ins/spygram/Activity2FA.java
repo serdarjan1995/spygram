@@ -42,7 +42,7 @@ public class Activity2FA extends AppCompatActivity {
             String phone_number = b.getString("phone_number");
             if (!phone_number.equals("")) {
                 TextView phoneNumberTextView = findViewById(R.id.textView2fa_phonenumber);
-                phoneNumberTextView.setText(String.format("Phone Number: *****%s", phone_number));
+                phoneNumberTextView.setText(String.format(getString(R.string.phone_number), phone_number));
             }
             final String identifier = b.getString("identifier");
             final String username = b.getString("username");

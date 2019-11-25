@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
-import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -26,6 +25,7 @@ import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
 
@@ -41,7 +41,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -51,10 +55,6 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class MediaFragment extends Fragment {
-
-    MediaController mediaController;
-    VideoView videoView;
-    int mediaType;
 
     public static MediaFragment newInstance(StoryEntity storyEntity) {
         MediaFragment f = new MediaFragment();
@@ -75,7 +75,7 @@ public class MediaFragment extends Fragment {
         final StoryEntity storyEntity = getArguments().getParcelable("story");
         assert storyEntity != null;
         String mediaUrl = storyEntity.getDefaultMediaUrl();
-        mediaType = storyEntity.getMediaType();
+        int mediaType = storyEntity.getMediaType();
         final FrameLayout story_fragment = v.findViewById(R.id.story_fragment);
         ImageView downloadIcon = new ImageView(v.getContext());
         FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -94,42 +94,65 @@ public class MediaFragment extends Fragment {
             }
         });
 
+        TextView publishDate = v.findViewById(R.id.story_date);
+        Date storyDate = new Date(storyEntity.getPublishTime()*1000);
+        TimeZone tz = TimeZone.getDefault();
+        SimpleDateFormat ft = new SimpleDateFormat("MMM dd, yyyy - HH:mm", Locale.getDefault());
+        ft.setTimeZone(tz);
+        publishDate.setText(ft.format(storyDate));
+        ImageView imageView = v.findViewById(R.id.story_image);
+        final CustomVideoView videoView = v.findViewById(R.id.story_video);
         if (mediaType == 1) {
-            ImageView imageView = v.findViewById(R.id.story_image);
+            videoView.setVisibility(View.INVISIBLE);
+            ImageView playButton = v.findViewById(R.id.story_video_play_pause);
+            playButton.setVisibility(View.INVISIBLE);
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
             Picasso.get().load(mediaUrl).into(imageView);
         }
         else{
-            videoView = v.findViewById(R.id.story_video);
-            mediaController = new MediaController(this.getContext());
-            videoView.setMediaController(mediaController);
+            imageView.setVisibility(View.INVISIBLE);
+            final ImageView playButton = v.findViewById(R.id.story_video_play_pause);
             videoView.setVideoURI(Uri.parse(mediaUrl));
-            mediaController.setAnchorView(videoView);
             videoView.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
+                    videoView.seekTo( 1 );
                     mp.setLooping(true);
-                    mediaController.hide();
+                    videoView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+                        @Override
+                        public void onFocusChange(View view, boolean b) {
+                            if(!b){
+                                if(videoView.isPlaying()){
+                                    videoView.pause();
+                                    playButton.setImageResource(R.mipmap.play_button);
+                                }
+                            }
+                        }
+                    });
+                    playButton.setVisibility(View.VISIBLE);
                 }
             });
-            videoView.seekTo( 1 );
-            videoView.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+
+
+            playButton.setOnClickListener(new View.OnClickListener() {
                 @Override
-                public void onFocusChange(View view, boolean b) {
-                    if (!b){
-                        videoView.stopPlayback();
-                        mediaController.hide();
+                public void onClick(View view) {
+                    if(videoView.isPlaying()){
+                        videoView.pause();
+                        playButton.setImageResource(R.mipmap.play_button);
+                    }
+                    else{
+                        videoView.start();
+                        playButton.setImageResource(R.mipmap.pause_button);
                     }
                 }
             });
+
         }
         story_fragment.addView(downloadIcon);
         return v;
     }
 
-    public int getMediaType() {
-        return mediaType;
-    }
 
     public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities,
                                        final String username, final Context context) {
@@ -157,10 +180,10 @@ public class MediaFragment extends Fragment {
                         RadioButton rb=new RadioButton(context);
                         String text;
                         if(mediaDownloadEntities.get(i).getMediaType()==1){
-                            text = mediaDownloadEntities.get(i).getDimensions() + " " + "Image";
+                            text = mediaDownloadEntities.get(i).getDimensions() + " " + getString(R.string.image);
                         }
                         else{
-                            text = mediaDownloadEntities.get(i).getDimensions() + " " + "Video";
+                            text = mediaDownloadEntities.get(i).getDimensions() + " " + getString(R.string.video);
                         }
                         rb.setText(text);
                         rb.setId(i);

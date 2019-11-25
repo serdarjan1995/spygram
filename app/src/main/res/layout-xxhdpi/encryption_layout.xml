@@ -35,7 +35,7 @@
         android:layout_height="158dp"
         android:layout_alignParentTop="true"
         android:layout_centerHorizontal="true"
-        android:layout_marginTop="102dp"
+        android:layout_marginTop="60dp"
         android:text="@string/encryption_text"
         android:textAlignment="center"
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"

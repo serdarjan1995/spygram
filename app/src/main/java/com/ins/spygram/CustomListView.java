@@ -275,8 +275,8 @@ public class CustomListView extends ArrayAdapter<String> {
                             mBuilder.setContentIntent(contentIntent);
                             mBuilder.setAutoCancel(true);
                             mBuilder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
-                            mBuilder.setSmallIcon(R.drawable.ic_menu_gallery);
-                            mBuilder.setContentText( String.format("Profile photo of %s downloaded. [%s]",username,dim) );
+                            mBuilder.setSmallIcon(R.drawable.ic_wallpaper_black_24dp);
+                            mBuilder.setContentText( String.format(context.getString(R.string.pp_downloaded),username,dim) );
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }
 

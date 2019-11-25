@@ -1,13 +1,10 @@
 package com.ins.spygram;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import android.os.Bundle;
 import android.widget.Toast;
-import android.widget.VideoView;
 
 import com.rd.PageIndicatorView;
 
@@ -52,19 +49,12 @@ public class StoryViewer extends FragmentActivity {
             }
         }
 
-
-        final List<MediaFragment> fragments = new ArrayList<>();
-        for (int i=0; i<storyEntities.size(); i++){
-            fragments.add(MediaFragment.newInstance(storyEntities.get(i)));
-        }
-
         final StoryFragmentAdapter adapter = new StoryFragmentAdapter(getSupportFragmentManager(),
                 FragmentStatePagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT, storyEntities);
         pager.setAdapter(adapter);
         pager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
             }
 
             @Override

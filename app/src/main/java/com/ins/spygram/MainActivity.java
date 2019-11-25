@@ -1,17 +1,25 @@
 package com.ins.spygram;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.Dialog;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.DisplayMetrics;
@@ -20,6 +28,9 @@ import android.view.Display;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.view.GravityCompat;
 import androidx.appcompat.app.ActionBarDrawerToggle;
 import android.view.MenuItem;
@@ -50,13 +61,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
 import android.view.Menu;
+import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,7 +79,11 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -76,6 +95,8 @@ import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
+import static android.content.ClipDescription.MIMETYPE_TEXT_PLAIN;
+
 public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -83,12 +104,14 @@ public class MainActivity extends AppCompatActivity
     private String SESSION_ID;
     private FragmentManager fragmentManager;
     private ViewFragment keyFragment;
+    private ViewFragment downloadByLinkFragment;
     private ViewFragment followersFragment;
     private String checkDecryptionString;
     private String checkDecryptionSuccess;
     private String initVector;
     private AdView bannerAdView;
     private UnifiedNativeAd nativeAd;
+    private UnifiedNativeAd nativeAd2;
     private boolean loggedOut = false;
     private FirebaseRemoteConfig firebaseRemoteConfig;
     final String VERSION_CODE_KEY = "version_code";
@@ -111,13 +134,13 @@ public class MainActivity extends AppCompatActivity
         NotificationManager nm =(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
-            String Description = "Spygram notification channel";
+            String description = "Spygram notification channel";
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel mChannel = new NotificationChannel(Util.NOTIFICATION_CHANNEL_ID, name, importance);
-            mChannel.setDescription(Description);
+            mChannel.setDescription(description);
             mChannel.enableLights(true);
             mChannel.setLightColor(Color.GRAY);
-            mChannel.enableVibration(false);
+            mChannel.enableVibration(true);
             mChannel.setSound(null, null);
             mChannel.setShowBadge(false);
             nm.createNotificationChannel(mChannel);
@@ -167,9 +190,11 @@ public class MainActivity extends AppCompatActivity
 
 
         keyFragment = new ViewFragment(R.layout.content_key);
+        downloadByLinkFragment = new ViewFragment(R.layout.content_download_by_link);
         followersFragment = new ViewFragment(R.layout.content_followers);
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
+        navigationView.getMenu().getItem(0).setChecked(true);
         loadNativeAd();
         loadBanner();
         Util.checkPermission(this);
@@ -215,7 +240,9 @@ public class MainActivity extends AppCompatActivity
 
     private void loadBanner() {
         AdRequest adRequest =
-                new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build();
+                new AdRequest.Builder()
+                        .addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039")
+                        .build();
 
         AdSize adSize = getAdSize();
         if (bannerAdView.getAdSize() == null){
@@ -239,26 +266,34 @@ public class MainActivity extends AppCompatActivity
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
+
     private void loadNativeAd(){
+        final NavigationView navigationView = findViewById(R.id.nav_view);
+
+
         AdLoader adLoader = new AdLoader.Builder(this, getString(R.string.native_ad_unit_id))
                 .forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
                     @Override
                     public void onUnifiedNativeAdLoaded(UnifiedNativeAd unifiedNativeAd) {
-                        FrameLayout frameLayout =
-                                findViewById(R.id.nativeadframe);
-                        UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
-                                .inflate(R.layout.ad_unified, null);
-                        populateUnifiedNativeAdView(unifiedNativeAd, adView);
-                        frameLayout.removeAllViews();
-                        frameLayout.addView(adView);
-
+                        FrameLayout frameLayout;
+                        if (navigationView.getMenu().getItem(0).isChecked()){
+                            frameLayout = findViewById(R.id.nativeadframe);
+                        }else {
+                            frameLayout = findViewById(R.id.nativeadframe2);
+                        }
+                        if (frameLayout != null){
+                            UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
+                                    .inflate(R.layout.ad_unified, null);
+                            populateUnifiedNativeAdView(unifiedNativeAd, adView);
+                            frameLayout.removeAllViews();
+                            frameLayout.addView(adView);
+                        }
 
                     }
                 })
                 .build();
 
-        adLoader.loadAd(new AdRequest.Builder().build());
-
+        adLoader.loadAd(new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build());
     }
 
 
@@ -360,22 +395,29 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void refreshAd() {
-
+    private void refreshAd(){
         AdLoader.Builder builder = new AdLoader.Builder(this, getString(R.string.native_ad_unit_id));
 
         builder.forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
             // OnUnifiedNativeAdLoadedListener implementation.
             @Override
             public void onUnifiedNativeAdLoaded(UnifiedNativeAd unifiedNativeAd) {
-                // You must call destroy on old ads when you are done with them,
-                // otherwise you will have a memory leak.
                 if (nativeAd != null) {
                     nativeAd.destroy();
                 }
-                nativeAd = unifiedNativeAd;
-                FrameLayout frameLayout =
-                        findViewById(R.id.nativeadframe);
+                if (nativeAd2 != null) {
+                    nativeAd2.destroy();
+                }
+
+                NavigationView navigationView = findViewById(R.id.nav_view);
+                FrameLayout frameLayout;
+                if (navigationView.getMenu().getItem(0).isChecked()){
+                    frameLayout = findViewById(R.id.nativeadframe);
+                    nativeAd = unifiedNativeAd;
+                }else {
+                    frameLayout = findViewById(R.id.nativeadframe2);
+                    nativeAd2 = unifiedNativeAd;
+                }
                 UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
                         .inflate(R.layout.ad_unified, null);
                 populateUnifiedNativeAdView(unifiedNativeAd, adView);
@@ -401,7 +443,7 @@ public class MainActivity extends AppCompatActivity
             }
         }).build();
 
-        adLoader.loadAd(new AdRequest.Builder().build());
+        adLoader.loadAd(new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build());
     }
 
 
@@ -411,7 +453,7 @@ public class MainActivity extends AppCompatActivity
             case 1: {
                 if (grantResults.length == 0
                         || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    backgroundThreadShortToast("WRITE permissions needed to download content.");
+                    backgroundThreadShortToast(getString(R.string.write_perm));
                 }
                 break;
             }
@@ -489,6 +531,20 @@ public class MainActivity extends AppCompatActivity
                     toastMsg(getString(R.string.keyphrase_error_msg));
                 }
                 break;
+            case R.id.nav_download_by_link:
+                //TODO
+                // add public/private switch button for extra UX
+                if( checkDecryptionString.equals(checkDecryptionSuccess)){
+                    fragmentManager.beginTransaction().replace(R.id.content_frame, downloadByLinkFragment).commit();
+                    refreshAd();
+                }
+                else{
+                    toastMsg(getString(R.string.keyphrase_error_msg));
+                }
+                break;
+            case R.id.nav_download_how_to:
+                fragmentManager.beginTransaction().replace(R.id.content_frame, new DownloadHowToParentFragment()).commit();
+                break;
             case R.id.nav_clear_session:
                 new AlertDialog.Builder(this)
                         .setMessage(getString(R.string.clear_session_msg))
@@ -537,9 +593,234 @@ public class MainActivity extends AppCompatActivity
             fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
                     .commitAllowingStateLoss();
             getStoryReels();
+            NavigationView navigationView = findViewById(R.id.nav_view);
+            navigationView.getMenu().getItem(1).setChecked(true);
 
         }
     }
+
+    public void onClickDownloadByLink(View v){
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null && clipboard.getPrimaryClipDescription() != null
+                && clipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
+            if( clipboard.getPrimaryClip() != null){
+                ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
+                String pasteData = "" + item.getText() + "&__a=1";
+                if (pasteData.contains("www.instagram.com/p/")){
+                    String url = pasteData + "&__a=1";
+                    OkHttpClient client = Util.getHttpClient();
+                    Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
+                            getString(R.string.content_type)).build();
+
+                    client.newCall(request).enqueue(new Callback() {
+                        @Override
+                        public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                            backgroundThreadShortToast(getString(R.string.net_err));
+                        }
+
+                        @Override
+                        public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException{
+                            if(response.isSuccessful()){
+                                ResponseBody responseBody = response.body();
+                                if (responseBody != null){
+                                    ArrayList<MediaDownloadEntity> mediaDownloadEntities =
+                                            Util.parseDownloadLinkResponse(responseBody.string());
+                                    backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
+
+                                }
+                            }
+                        }
+                    });
+                }
+                else{
+                    toastMsg(getString(R.string.clipboard_not_valid));
+                }
+            }
+        }
+    }
+
+    public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities, final Activity context) {
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                final Dialog dialog = new Dialog(context);
+                dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                dialog.setContentView(R.layout.radiobutton_dialog);
+                final RadioGroup rg = dialog.findViewById(R.id.radio_group);
+                Button downloadButton = dialog.findViewById(R.id.radiogroup_button);
+                downloadButton.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        Util.checkPermission(context);
+                        if (ContextCompat.checkSelfPermission(getApplicationContext(),
+                                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                            downloadMedia(mediaDownloadEntities.get(rg.getCheckedRadioButtonId()),context);
+                        }
+
+                    }
+                });
+                for(int i=0; i<mediaDownloadEntities.size(); i++){
+                    if (mediaDownloadEntities.get(i) == null){
+                        View vvv = new View(context);
+                        vvv.setLayoutParams(new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.MATCH_PARENT,
+                                5
+                        ));
+                        vvv.setBackgroundColor(Color.parseColor("#B3B3B3"));
+                        rg.addView(vvv);
+                        continue;
+                    }
+                    RadioButton rb=new RadioButton(context);
+                    String text;
+                    if(mediaDownloadEntities.get(i).getMediaType()==1){
+                        text = mediaDownloadEntities.get(i).getDimensions() + " " + getString(R.string.image);
+                    }
+                    else{
+                        text = mediaDownloadEntities.get(i).getDimensions() + " " + getString(R.string.video);
+                    }
+                    rb.setText(text);
+                    rb.setId(i);
+                    rg.addView(rb);
+                }
+                rg.check(0);
+                dialog.show();
+
+            }
+        });
+    }
+
+
+
+    public void downloadMedia(final MediaDownloadEntity media, final Activity context){
+        OkHttpClient client = new OkHttpClient.Builder().build();
+        final Request request = new Request.Builder()
+                .url(media.getUrl())
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                e.printStackTrace();
+                backgroundThreadShortToast(context.getString(R.string.net_err));
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) {
+                if(response.isSuccessful()){
+                    final ResponseBody responseBody = response.body();
+                    if (responseBody != null){
+                        InputStream inputStream = responseBody.byteStream();
+                        Uri uri = null;
+                        if (media.getMediaType() == 1){
+                            Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                                    context.getString(R.string.app_name));
+                            if(!saveDir.exists()){
+                                if(!saveDir.mkdirs()){
+                                    Util.checkPermission(getParent());
+                                    return;
+                                }
+                            }
+                            String fileName = "MD_" + media.getId() + "_" + media.getDimensions() +
+                                    media.getId() + ".jpg";
+                            File file = new File(saveDir, fileName);
+                            if (file.exists()){
+                                file.delete();
+                            }
+                            FileOutputStream out;
+                            try{
+                                out = new FileOutputStream(file);
+                                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                                out.flush();
+                                out.close();
+                                uri = FileProvider.getUriForFile(context,
+                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                            }
+                            catch (IOException e){
+                                Util.checkPermission(getParent());
+                                return;
+                            }
+
+                        }
+                        else if (media.getMediaType() == 2){
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                                    context.getString(R.string.app_name));
+                            if(!saveDir.exists()){
+                                if(!saveDir.mkdirs()){
+                                    Util.checkPermission(getParent());
+                                    return;
+                                }
+                            }
+                            String fileName = "MD_" + media.getId() + "_" + media.getDimensions() +
+                                    media.getId() + ".mp4";
+                            File file = new File(saveDir, fileName);
+                            if (file.exists()){
+                                file.delete();
+                            }
+                            FileOutputStream out;
+                            byte[] buff = new byte[1024 * 4];
+                            try{
+                                out = new FileOutputStream(file);
+                                while (true) {
+                                    int readed = inputStream.read(buff);
+
+                                    if (readed == -1) {
+                                        break;
+                                    }
+                                    out.write(buff, 0, readed);
+                                }
+                                out.flush();
+                                out.close();
+                                uri = FileProvider.getUriForFile(context,
+                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                            }
+                            catch (IOException e){
+                                Util.checkPermission(getParent());
+                                return;
+                            }
+                        }
+
+                        NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        if (uri != null && nm != null){
+                            Intent intent = new Intent(Intent.ACTION_VIEW);
+                            if (media.getMediaType()==1){
+                                intent.setDataAndType(uri, "image/*");
+                            }
+                            else{
+                                intent.setDataAndType(uri, "video/*");
+                            }
+                            intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                            PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
+                                    intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context ,
+                                    Util.NOTIFICATION_CHANNEL_ID ) ;
+                            mBuilder.setContentTitle(context.getString(R.string.app_name));
+                            mBuilder.setContentIntent(contentIntent);
+                            mBuilder.setAutoCancel(true);
+                            String contentText;
+                            if (media.getMediaType()==1){
+                                mBuilder.setSmallIcon(R.drawable.ic_panorama_black_24dp);
+                                contentText = String.format(getString(R.string.image_downloaded),media.getId(),media.getDimensions());
+                            }
+                            else{
+                                mBuilder.setSmallIcon(R.drawable.ic_ondemand_video_black_24dp);
+                                contentText = String.format(getString(R.string.video_downloaded),media.getId(),media.getDimensions());
+                            }
+                            mBuilder.setContentText( contentText );
+                            nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
+                        }
+
+                    }
+
+                }
+            }
+        });
+
+    }
+
+
+
+
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -568,7 +849,7 @@ public class MainActivity extends AppCompatActivity
             url = String.format(url,id);
         }
         else{
-            url = getString(R.string.url_host) + getString(R.string.path_get_followees);
+            url = getString(R.string.url_host) + getString(R.string.path_get_followings);
             url = String.format(url,id);
         }
 
@@ -639,7 +920,7 @@ public class MainActivity extends AppCompatActivity
                                 e.printStackTrace();
                             }
                             catch (Exception e) {
-                                Log.e("ERROR","General error occurred. ");
+                                Log.e("ERROR",getString(R.string.gen_error));
                                 e.printStackTrace();
                             }
                         }

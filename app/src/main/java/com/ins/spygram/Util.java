@@ -8,6 +8,7 @@ import android.util.Base64;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -108,7 +110,7 @@ public class Util {
                 .add(hostname, "sha256/mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=")
                 .add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
                 .add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
-                .add(hostname, "sha256/Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=")
+                //.add(hostname, "sha256/Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=")
                 .build();
         OkHttpClient client = new OkHttpClient.Builder()
                 .certificatePinner(certificatePinner)
@@ -190,5 +192,80 @@ public class Util {
             ActivityCompat.requestPermissions(context,
                     new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},2);
         }
+    }
+
+    public static ArrayList<MediaDownloadEntity> parseDownloadLinkResponse(String response){
+        ArrayList<MediaDownloadEntity> mediaDownloadEntities = new ArrayList<>();
+        try{
+            JSONObject responseJson = new JSONObject(response);
+            if (responseJson.has("graphql") &&
+                    responseJson.getJSONObject("graphql").has("shortcode_media")){
+                JSONObject shortcode_media = responseJson.getJSONObject("graphql").getJSONObject("shortcode_media");
+                String config_width;
+                String config_height;
+                String url;
+                if (shortcode_media.has("__typename")
+                        && shortcode_media.getString("__typename").equals("GraphImage")
+                        && !shortcode_media.getBoolean("is_video")){
+                    //this is image
+                    JSONArray displayResources = shortcode_media.getJSONArray("display_resources");
+                    for (int i=0; i<displayResources.length(); i++){
+                        url = displayResources.getJSONObject(i).getString("src");
+                        config_height = displayResources.getJSONObject(i).getString("config_height");
+                        config_width = displayResources.getJSONObject(i).getString("config_width");
+                        mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
+                                1,shortcode_media.getString("id")));
+                    }
+
+                }
+                else if (shortcode_media.has("__typename")
+                        && shortcode_media.getString("__typename").equals("GraphVideo")
+                        && shortcode_media.getBoolean("is_video")){
+                    //this is video
+                    url = shortcode_media.getString("video_url");
+                    config_height = shortcode_media.getJSONObject("dimensions").getString("height");
+                    config_width = shortcode_media.getJSONObject("dimensions").getString("width");
+                    mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
+                                2,shortcode_media.getString("id")));
+                }
+                else if (shortcode_media.has("__typename")
+                        && shortcode_media.getString("__typename").equals("GraphSidecar")
+                        && !shortcode_media.getBoolean("is_video")){
+                    //this is slide media
+                    JSONArray slide_edges = shortcode_media.getJSONObject("edge_sidecar_to_children").getJSONArray("edges");
+                    for (int k=0; k<slide_edges.length(); k++) {
+                        JSONObject node = slide_edges.getJSONObject(k).getJSONObject("node");
+                        if (node.has("__typename")
+                                && node.getString("__typename").equals("GraphImage")
+                                && !node.getBoolean("is_video")){
+                            //this is image
+                            JSONArray displayResources = node.getJSONArray("display_resources");
+                            for (int i=0; i<displayResources.length(); i++){
+                                url = displayResources.getJSONObject(i).getString("src");
+                                config_height = displayResources.getJSONObject(i).getString("config_height");
+                                config_width = displayResources.getJSONObject(i).getString("config_width");
+                                mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
+                                        1,node.getString("id")));
+                            }
+
+                        }
+                        else if (node.has("__typename")
+                                && node.getString("__typename").equals("GraphVideo")
+                                && node.getBoolean("is_video")){
+                            //this is video
+                            url = node.getString("video_url");
+                            config_height = node.getJSONObject("dimensions").getString("height");
+                            config_width = node.getJSONObject("dimensions").getString("width");
+                            mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
+                                    2,node.getString("id")));
+                        }
+                        mediaDownloadEntities.add(null);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mediaDownloadEntities;
     }
 }
