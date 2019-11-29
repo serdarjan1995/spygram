@@ -77,7 +77,6 @@ public class Util {
             e.printStackTrace();
             return null;
         } catch (Exception e){
-            System.out.println("Error occured: ");
             e.printStackTrace();
             return null;
         }
@@ -98,7 +97,6 @@ public class Util {
             e.printStackTrace();
             return null;
         } catch (Exception e){
-            System.out.println("Error occured: ");
             e.printStackTrace();
             return null;
         }
@@ -110,7 +108,7 @@ public class Util {
                 .add(hostname, "sha256/mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=")
                 .add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
                 .add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
-                //.add(hostname, "sha256/Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=")
+                .add(hostname, "sha256/Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=")
                 .build();
         OkHttpClient client = new OkHttpClient.Builder()
                 .certificatePinner(certificatePinner)
@@ -125,8 +123,11 @@ public class Util {
                                                           String content_type){
         Request.Builder request = new Request.Builder()
                 .url(url)
-                .header("User-Agent", user_agent)
-                .addHeader("Content-Type", content_type);
+                .header("User-Agent", user_agent);
+        if (!content_type.equals("")){
+            request.addHeader("Content-Type", content_type);
+        }
+
         if (!session_id.equals("")){
             request.addHeader("Cookie", session_id);
         }
@@ -150,7 +151,7 @@ public class Util {
                 JSONObject responseJson = new JSONObject(responseBody.string());
                 if (responseJson.has("logged_in_user")) {
                     JSONObject jsonLoggedInUser = responseJson.getJSONObject("logged_in_user");
-                    String sessionid = "";
+                    String sessionid;
                     if (!response.headers("Set-Cookie").isEmpty()) {
 
                         for (String cookies : response.headers("Set-Cookie")) {

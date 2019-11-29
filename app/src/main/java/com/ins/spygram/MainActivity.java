@@ -146,7 +146,6 @@ public class MainActivity extends AppCompatActivity
             nm.createNotificationChannel(mChannel);
         }
 
-
         //force update
         firebaseRemoteConfig = FirebaseRemoteConfig.getInstance();
         HashMap<String, Object> remoteConfigDefaults = new HashMap<>();
@@ -187,18 +186,16 @@ public class MainActivity extends AppCompatActivity
         bannerAdView.setAdUnitId(getString(R.string.banner_unit_id));
         adContainerView.addView(bannerAdView);
 
-
-
         keyFragment = new ViewFragment(R.layout.content_key);
         downloadByLinkFragment = new ViewFragment(R.layout.content_download_by_link);
         followersFragment = new ViewFragment(R.layout.content_followers);
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
         navigationView.getMenu().getItem(0).setChecked(true);
+        getSharedPreferencesValues();
         loadNativeAd();
         loadBanner();
         Util.checkPermission(this);
-        getSharedPreferencesValues();
     }
 
     private void checkForUpdate() {
@@ -240,9 +237,7 @@ public class MainActivity extends AppCompatActivity
 
     private void loadBanner() {
         AdRequest adRequest =
-                new AdRequest.Builder()
-                        .addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039")
-                        .build();
+                new AdRequest.Builder().build();
 
         AdSize adSize = getAdSize();
         if (bannerAdView.getAdSize() == null){
@@ -293,7 +288,7 @@ public class MainActivity extends AppCompatActivity
                 })
                 .build();
 
-        adLoader.loadAd(new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build());
+        adLoader.loadAd(new AdRequest.Builder().build());
     }
 
 
@@ -443,7 +438,7 @@ public class MainActivity extends AppCompatActivity
             }
         }).build();
 
-        adLoader.loadAd(new AdRequest.Builder().addTestDevice("6F4C8BD9AE078F1B48B1D1F439EF5039").build());
+        adLoader.loadAd(new AdRequest.Builder().build());
     }
 
 

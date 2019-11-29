@@ -17,6 +17,8 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
@@ -32,6 +34,8 @@ public class LoginActivity extends AppCompatActivity {
     private EditText passwordEditText;
     private String username;
     private String password;
+    private String androidId;
+    private String challenge_api_path;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +54,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 else{
                     JSONObject json = new JSONObject();
-                    String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+                    androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
                     try {
                         json.put("username", username);
                         json.put("password",password);
@@ -137,6 +141,28 @@ public class LoginActivity extends AppCompatActivity {
                                 }
 
                             }
+                            else if (responseJson.has("status") && responseJson.get("status").equals("fail") &&
+                                    responseJson.has("message") &&
+                                    responseJson.get("message").equals("challenge_required") ){
+                                //TODO
+                                challenge_api_path = responseJson.getJSONObject("challenge").getString("api_path");
+                                String mid = "";
+                                if (!response.headers("Set-Cookie").isEmpty()) {
+                                    for (String cookies : response.headers("Set-Cookie")) {
+                                        if (cookies.contains("mid=")) {
+                                            Pattern pattern = Pattern.compile("mid=(.*?);");
+                                            Matcher matcher = pattern.matcher(cookies);
+                                            if (matcher.find()) {
+                                                mid = matcher.group().replace("mid=", "");
+                                                mid = mid.replace(";", "");
+                                            }
+
+                                        }
+
+                                    }
+                                }
+                                requestChallenge(challenge_api_path,mid);
+                            }
                             else if (responseJson.has("status") && responseJson.get("status").equals("fail") ){
                                 backgroundThreadShortToast(responseJson.getString("message"));
                             }
@@ -151,6 +177,67 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
+
+    private void requestChallenge(String url, final String mid){
+        String urlLogin = getString(R.string.url_host) + url + "?device_id=" + androidId;
+        OkHttpClient client;
+        try {
+            client = Util.getHttpClient();
+
+        }
+        catch (Exception e){
+            backgroundThreadShortToast(getString(R.string.net_err));
+            return;
+        }
+        final Request request = Util.getRequestHeaderBuilder(urlLogin, "mid=" + mid,
+                getString(R.string.user_agent),"")
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if(response.isSuccessful()){
+                    ResponseBody responseBody = response.body();
+                    try {
+                        JSONObject r_response = new JSONObject(responseBody.string());
+                        if (r_response.has("status") &&
+                                r_response.getString("status").equals("ok") &&
+                                r_response.has("step_data")){
+                            JSONObject step_data = r_response.getJSONObject("step_data");
+                            Intent intent = new Intent(LoginActivity.this, ChallengeActivity.class);
+                            Bundle b = new Bundle();
+                            b.putString("phone_number", step_data.getString("phone_number"));
+                            b.putString("androidId", androidId);
+                            b.putString("mid", mid);
+                            b.putString("challenge_api_path", challenge_api_path);
+                            b.putString("step_name", r_response.getString("step_name"));
+                            intent.putExtras(b);
+                            startActivityForResult(intent, 3);
+                        }
+                        else{
+                            backgroundThreadShortToast(getString(R.string.fail_login) + " 1");
+                        }
+                    }
+                    catch(JSONException e){
+                        e.printStackTrace();
+                        backgroundThreadShortToast(getString(R.string.fail_login) + " 2");
+                    }
+                }
+                else{
+                    backgroundThreadShortToast(getString(R.string.fail_login) + " 3");
+                }
+            }
+
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                e.printStackTrace();
+                backgroundThreadShortToast(getString(R.string.net_err));
+            }
+        });
+    }
+
+
 
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
@@ -182,6 +269,19 @@ public class LoginActivity extends AppCompatActivity {
                 b.putString("userid", data.getStringExtra("userid"));
                 intent.putExtras(b);
                 startActivityForResult(intent, 1);
+            }
+        }
+        else if (requestCode == 3) {
+            if (resultCode == Activity.RESULT_OK) {
+                JSONObject json = new JSONObject();
+                try {
+                    json.put("username", username);
+                    json.put("password",password);
+                    json.put("device_id",androidId);
+                    loginTry(json);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

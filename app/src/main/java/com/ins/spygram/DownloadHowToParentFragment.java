@@ -4,14 +4,11 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentPagerAdapter;
-import androidx.fragment.app.FragmentTransaction;
 import androidx.viewpager.widget.ViewPager;
 
 import com.rd.PageIndicatorView;
@@ -26,8 +23,6 @@ public class DownloadHowToParentFragment extends Fragment {
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
-        /*FragmentTransaction transaction = getChildFragmentManager().beginTransaction();
-        transaction.replace(R.id.how_to_download_fragment, childFragment).commit();*/
         ViewPager pager = view.findViewById(R.id.ViewPagerHowTo);
         HowToDownloadFragmentAdapter adapter = new HowToDownloadFragmentAdapter(getChildFragmentManager(),
                 FragmentPagerAdapter.BEHAVIOR_RESUME_ONLY_CURRENT_FRAGMENT);

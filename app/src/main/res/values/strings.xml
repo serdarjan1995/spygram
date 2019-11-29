@@ -31,10 +31,8 @@
     <string name="_2fa_auth_code">2FA auth code</string>
     <string name="text_2fa">Seems like your account protected with 2FA.\nPlease enter verification code which you should receive within a few minutes</string>
     <string name="logout_str">Log out | Clear Session</string>
-    <string name="banner_unit_id">ca-app-pub-3940256099942544/6300978111</string>
-    <string name="native_ad_unit_id">ca-app-pub-3940256099942544/2247696110</string>
-    <string name="banner_unit_id2">ca-app-pub-2181561381492488/4184114792</string>
-    <string name="native_ad_unit_id2">ca-app-pub-2181561381492488/8025773996</string>
+    <string name="banner_unit_id">ca-app-pub-2181561381492488/4184114792</string>
+    <string name="native_ad_unit_id">ca-app-pub-2181561381492488/8025773996</string>
     <string name="ad_attribution">Ad</string>
     <string name="keyphrase_error_msg">Please check your keyphrase. It is incorrect</string>
     <string name="keyphrase_empty">Please enter your passphrase</string>
@@ -69,4 +67,6 @@
     <string name="video">Video</string>
     <string name="phone_number">"Phone number: *****%s"</string>
     <string name="pp_downloaded">Profile photo of %s downloaded. [%s]</string>
+    <string name="fail_login">Login failed!</string>
+    <string name="challenge_req">You should register this device via challenge verification to Instagram account</string>
 </resources>

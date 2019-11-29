@@ -31,10 +31,8 @@
     <string name="_2fa_auth_code">2-х факторный код</string>
     <string name="text_2fa">Похоже, ваш аккаунт защищен двухфакторной аутентификацией.\nПожалуйста, введите проверочный код, который вы должны получить в течение нескольких минут</string>
     <string name="logout_str">Выйти | Очистить сессию</string>
-    <string name="banner_unit_id">ca-app-pub-3940256099942544/6300978111</string>
-    <string name="native_ad_unit_id">ca-app-pub-3940256099942544/2247696110</string>
-    <string name="banner_unit_id2">ca-app-pub-2181561381492488/4184114792</string>
-    <string name="native_ad_unit_id2">ca-app-pub-2181561381492488/8025773996</string>
+    <string name="banner_unit_id">ca-app-pub-2181561381492488/4184114792</string>
+    <string name="native_ad_unit_id">ca-app-pub-2181561381492488/8025773996</string>
     <string name="ad_attribution">Реклама</string>
     <string name="keyphrase_error_msg">Пожалуйста, проверьте вашу ключевую фразу.</string>
     <string name="keyphrase_empty">Пожалуйста, введите ваш пароль</string>
@@ -69,4 +67,6 @@
     <string name="video">Видео</string>
     <string name="phone_number">"Номер телефона: *****%s"</string>
     <string name="pp_downloaded">Фотография профиля %s загруженного. [%s]</string>
+    <string name="fail_login">Не удалось войти!</string>
+    <string name="challenge_req">Вы должны зарегистрировать это устройство путем проверки кода в аккаунт Instagram</string>
 </resources>

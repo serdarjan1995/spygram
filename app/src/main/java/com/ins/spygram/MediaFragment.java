@@ -101,7 +101,7 @@ public class MediaFragment extends Fragment {
         ft.setTimeZone(tz);
         publishDate.setText(ft.format(storyDate));
         ImageView imageView = v.findViewById(R.id.story_image);
-        final CustomVideoView videoView = v.findViewById(R.id.story_video);
+        final VideoView videoView = v.findViewById(R.id.story_video);
         if (mediaType == 1) {
             videoView.setVisibility(View.INVISIBLE);
             ImageView playButton = v.findViewById(R.id.story_video_play_pause);

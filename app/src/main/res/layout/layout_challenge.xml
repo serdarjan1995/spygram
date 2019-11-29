@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/background_gredient"
+    android:orientation="vertical"
+    >
+
+
+    <TextView
+        android:id="@+id/textView2Fa"
+        android:layout_width="292dp"
+        android:layout_height="108dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:text="@string/challenge_req"
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        android:textStyle="bold|italic" />
+
+    <TextView
+        android:id="@+id/textViewchallenge_phonenumber"
+        android:layout_width="277dp"
+        android:layout_height="41dp"
+        android:layout_gravity="center_horizontal"
+        android:text=""
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        android:textStyle="bold|italic" />
+
+    <EditText
+        android:id="@+id/editText_challenge"
+        android:layout_width="230dp"
+        android:layout_height="45dp"
+        android:background="#33FFFFFF"
+        android:layout_marginTop="5dp"
+        android:ems="10"
+        android:layout_gravity="center_horizontal"
+        android:inputType="textPersonName"
+        android:importantForAutofill="no" />
+
+    <Button
+        android:id="@+id/buttonChallengeCode"
+        style="@style/Widget.AppCompat.Button.Borderless.Colored"
+        android:layout_width="230dp"
+        android:layout_marginTop="8dp"
+        android:layout_height="45dp"
+        android:layout_marginBottom="334dp"
+        android:layout_gravity="center_horizontal"
+        android:background="#80FFFFFF"
+        android:text="@string/menu_send" />
+
+
+</LinearLayout>

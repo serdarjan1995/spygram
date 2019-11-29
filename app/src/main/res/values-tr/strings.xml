@@ -31,10 +31,8 @@
     <string name="_2fa_auth_code">2 aşamalı doğrulama kodu</string>
     <string name="text_2fa">Hesabınız 2 aşamalı doğrulama ile korunmuştur.\nBirazdan kayıtlı numaranıza gelecek olan doğrulama kodu giriniz</string>
     <string name="logout_str">Çıkış yap | Oturumu kapat</string>
-    <string name="banner_unit_id">ca-app-pub-3940256099942544/6300978111</string>
-    <string name="native_ad_unit_id">ca-app-pub-3940256099942544/2247696110</string>
-    <string name="banner_unit_id2">ca-app-pub-2181561381492488/4184114792</string>
-    <string name="native_ad_unit_id2">ca-app-pub-2181561381492488/8025773996</string>
+    <string name="banner_unit_id">ca-app-pub-2181561381492488/4184114792</string>
+    <string name="native_ad_unit_id">ca-app-pub-2181561381492488/8025773996</string>
     <string name="ad_attribution">Reklam</string>
     <string name="keyphrase_error_msg">Lütfen doğru anahtar kelime girdiğinize emin olunuz</string>
     <string name="keyphrase_empty">Lütfen anahtar kelime giriniz</string>
@@ -69,4 +67,6 @@
     <string name="video">Video</string>
     <string name="phone_number">"Telefon numarası: *****%s"</string>
     <string name="pp_downloaded">%s kullanıcının profil resmi indirildi. [%s]</string>
+    <string name="fail_login">Oturum açma başarısız</string>
+    <string name="challenge_req">Bu cihazı, ekstra doğrulama yöntem ile Instagram hesabına kaydetmelisiniz</string>
 </resources>

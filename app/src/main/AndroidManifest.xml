@@ -17,12 +17,14 @@
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
             android:value="ca-app-pub-2181561381492488~2288563289"/>
-        <activity android:name=".Activity2FA"/>
-        <activity android:name=".SetUpKeyphraseActivity" />
-        <activity android:name=".LoginActivity" />
-        <activity android:name=".StoryViewer" />
+        <activity android:name=".Activity2FA" android:screenOrientation = "portrait"/>
+        <activity android:name=".SetUpKeyphraseActivity" android:screenOrientation = "portrait" />
+        <activity android:name=".LoginActivity" android:screenOrientation = "portrait" />
+        <activity android:name=".StoryViewer" android:screenOrientation = "portrait" />
+        <activity android:name=".ChallengeActivity" android:screenOrientation = "portrait" />
         <activity
             android:name=".MainActivity"
+            android:screenOrientation = "portrait"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
