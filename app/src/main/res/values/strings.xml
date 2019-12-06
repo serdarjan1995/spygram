@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Spygram</string>
+    <string name="app_name">Instagram Story Downloader</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Spygram</string>
+    <string name="nav_header_title">Instagram Story Downloader</string>
     <string name="action_settings">Settings</string>
     <string name="menu_key">Set Key</string>
     <string name="menu_followers">Followers</string>
@@ -11,17 +11,6 @@
     <string name="menu_send">Send</string>
     <string name="menu_download_by_link">Download by link</string>
     <string name="menu_download_how_to">How to download</string>
-    <string name="url_host">https://i.instagram.com</string>
-    <string name="path_get_followers">/api/v1/friendships/%s/followers/</string>
-    <string name="path_get_followings">/api/v1/friendships/%s/following/</string>
-    <string name="path_get_story">/api/v1/feed/user/%s/story/</string>
-    <string name="path_logout">/api/v1/accounts/logout/</string>
-    <string name="path_login">/api/v1/accounts/login/</string>
-    <string name="path_login_2fa">/api/v1/accounts/two_factor_login/</string>
-    <string name="path_reels_tray">/api/v1/feed/reels_tray/</string>
-    <string name="content_type">Application/x-www-form-urlencoded</string>
-    <string name="user_agent">Instagram 99.0.0.32.182 Android</string>
-    <string name="url_pp_download">https://instadp-cors-222621.appspot.com/get-hd?id=</string>
     <string name="sign_in">Sign in</string>
     <string name="password">Password</string>
     <string name="username">Username</string>
@@ -31,9 +20,7 @@
     <string name="_2fa_auth_code">2FA auth code</string>
     <string name="text_2fa">Seems like your account protected with 2FA.\nPlease enter verification code which you should receive within a few minutes</string>
     <string name="logout_str">Log out | Clear Session</string>
-    <string name="banner_unit_id">ca-app-pub-2181561381492488/4184114792</string>
-    <string name="native_ad_unit_id">ca-app-pub-2181561381492488/8025773996</string>
-    <string name="ad_attribution">Ad</string>
+    <string name="ad_attribution">Ads</string>
     <string name="keyphrase_error_msg">Please check your keyphrase. It is incorrect</string>
     <string name="keyphrase_empty">Please enter your passphrase</string>
     <string name="keyphrase_wrong">Keyphrase you entered is incorrect</string>

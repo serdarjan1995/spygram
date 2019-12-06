@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -14,7 +14,7 @@ import androidx.viewpager.widget.ViewPager;
 import com.rd.PageIndicatorView;
 
 public class DownloadHowToParentFragment extends Fragment {
-    private final int pageSize = 5;
+    private final int pageSize = 8;
 
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -45,6 +45,9 @@ public class DownloadHowToParentFragment extends Fragment {
                 case 2: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_3);
                 case 3: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_4);
                 case 4: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_5);
+                case 5: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_6);
+                case 6: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_7);
+                case 7: return HowToDownloadFragment.newInstance(R.drawable.download_how_to_8);
                 default: return null;
             }
 

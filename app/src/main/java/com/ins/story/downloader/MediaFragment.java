@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.Manifest;
 import android.app.Dialog;
@@ -10,11 +10,13 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,7 +24,6 @@ import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.MediaController;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
@@ -82,8 +83,9 @@ public class MediaFragment extends Fragment {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         params.width = 60;
         params.height = 60;
-        params.leftMargin = 50;
-        params.topMargin = 80;
+        params.rightMargin = 50;
+        params.topMargin = 120;
+        params.gravity = Gravity.END;
         downloadIcon.setImageResource(R.mipmap.download_icon);
         downloadIcon.setImageAlpha(200);
         downloadIcon.setLayoutParams(params);
@@ -241,6 +243,9 @@ public class MediaFragment extends Fragment {
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
                                         context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+
+                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                        new String[] {"image/*"}, null);
                             }
                             catch (IOException e){
                                 Util.checkPermission(getActivity());
@@ -279,6 +284,9 @@ public class MediaFragment extends Fragment {
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
                                         context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+
+                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                        new String[] {"video/*"}, null);
                             }
                             catch (IOException e){
                                 Util.checkPermission(getActivity());
@@ -309,6 +317,8 @@ public class MediaFragment extends Fragment {
                                 mBuilder.setSmallIcon(R.drawable.ic_menu_slideshow);
                             }
                             mBuilder.setAutoCancel(true);
+                            mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                            mBuilder.setVibrate(new long[] {100,100});
                             mBuilder.setContentText( String.format("Story of %s downloaded. [%s]",username,media.getDimensions()) );
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }

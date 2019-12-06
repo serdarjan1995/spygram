@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -14,17 +14,21 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Base64;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -87,11 +91,15 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -134,12 +142,12 @@ public class MainActivity extends AppCompatActivity
         NotificationManager nm =(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
-            String description = "Spygram notification channel";
+            String description = "Instagram Story Downloader notification channel";
             int importance = NotificationManager.IMPORTANCE_HIGH;
             NotificationChannel mChannel = new NotificationChannel(Util.NOTIFICATION_CHANNEL_ID, name, importance);
             mChannel.setDescription(description);
             mChannel.enableLights(true);
-            mChannel.setLightColor(Color.GRAY);
+            mChannel.setLightColor(Color.YELLOW);
             mChannel.enableVibration(true);
             mChannel.setSound(null, null);
             mChannel.setShowBadge(false);
@@ -183,7 +191,7 @@ public class MainActivity extends AppCompatActivity
 
         FrameLayout adContainerView = findViewById(R.id.ad_view_container);
         bannerAdView = new AdView(this);
-        bannerAdView.setAdUnitId(getString(R.string.banner_unit_id));
+        bannerAdView.setAdUnitId(Util.BANNER_UNIT_ID);
         adContainerView.addView(bannerAdView);
 
         keyFragment = new ViewFragment(R.layout.content_key);
@@ -208,18 +216,15 @@ public class MainActivity extends AppCompatActivity
                             new DialogInterface.OnClickListener() {
                                 @Override
                                 public void onClick(DialogInterface dialog, int which) {
-
-
-                                    final String appPackageName = getPackageName();
                                     try {
                                         Intent intent = new Intent(Intent.ACTION_VIEW,
-                                                Uri.parse("market://details?id=" + appPackageName));
+                                                Uri.parse(update_url));
                                         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                                         startActivity(intent);
                                         finish();
 
                                     } catch (android.content.ActivityNotFoundException e) {
-                                        startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(update_url)));
+                                        backgroundThreadShortToast(getString(R.string.gen_error));
                                         finish();
                                     }
                             }
@@ -266,7 +271,7 @@ public class MainActivity extends AppCompatActivity
         final NavigationView navigationView = findViewById(R.id.nav_view);
 
 
-        AdLoader adLoader = new AdLoader.Builder(this, getString(R.string.native_ad_unit_id))
+        AdLoader adLoader = new AdLoader.Builder(this, Util.NATIVE_AD_UNIT_ID)
                 .forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
                     @Override
                     public void onUnifiedNativeAdLoaded(UnifiedNativeAd unifiedNativeAd) {
@@ -391,7 +396,7 @@ public class MainActivity extends AppCompatActivity
 
 
     private void refreshAd(){
-        AdLoader.Builder builder = new AdLoader.Builder(this, getString(R.string.native_ad_unit_id));
+        AdLoader.Builder builder = new AdLoader.Builder(this, Util.NATIVE_AD_UNIT_ID);
 
         builder.forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
             // OnUnifiedNativeAdLoadedListener implementation.
@@ -600,12 +605,13 @@ public class MainActivity extends AppCompatActivity
                 && clipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
             if( clipboard.getPrimaryClip() != null){
                 ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
-                String pasteData = "" + item.getText() + "&__a=1";
-                if (pasteData.contains("www.instagram.com/p/")){
+                String pasteData = "" + item.getText();
+                if (pasteData.contains("instagram.com/p/") || pasteData.contains("instagram.com/tv/")){
                     String url = pasteData + "&__a=1";
                     OkHttpClient client = Util.getHttpClient();
-                    Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
-                            getString(R.string.content_type)).build();
+                    Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                            Util.USER_AGENT,Util.CONTENT_TYPE)
+                            .build();
 
                     client.newCall(request).enqueue(new Callback() {
                         @Override
@@ -627,11 +633,208 @@ public class MainActivity extends AppCompatActivity
                         }
                     });
                 }
+                else if (pasteData.contains("instagram.com/s/")){
+                    Pattern pattern = Pattern.compile("/s/(.*?)[?]");
+                    Matcher matcher = pattern.matcher(pasteData);
+                    Pattern pattern_st = Pattern.compile("story_media_id=[0-9_]+");
+                    Matcher matcher_st = pattern_st.matcher(pasteData);
+                    if (matcher.find()) {
+                        String highlight = matcher.group().replace("/s/", "").replace("?","");
+                        matcher_st.find();
+                        final String media_id = matcher_st.group().replace("story_media_id=", "");
+                        try{
+                            final String highlight_id = new String(Base64.decode(highlight,Base64.NO_WRAP));
+                            String url = Util.URL_HOST + Util.PATH_REELS_MEDIA;
+                            OkHttpClient client;
+                            RequestBody requestBody;
+                            try {
+                                JSONObject json = new JSONObject();
+                                JSONArray user_ids = new JSONArray();
+                                user_ids.put(highlight_id);
+                                json.put("user_ids", user_ids);
+                                client = Util.getHttpClient();
+                                requestBody = Util.getRequestBody(json);
+                            }
+                            catch (Exception e){
+                                backgroundThreadShortToast(getString(R.string.net_err));
+                                return;
+                            }
+                            final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                                    Util.USER_AGENT,Util.CONTENT_TYPE)
+                                    .post(requestBody)
+                                    .build();
+
+                            client.newCall(request).enqueue(new Callback() {
+                                @Override
+                                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                                    backgroundThreadShortToast(getString(R.string.net_err));
+                                }
+
+                                @Override
+                                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException{
+                                    if(response.isSuccessful()){
+                                        ResponseBody responseBody = response.body();
+                                        if (responseBody != null){
+                                            ArrayList<MediaDownloadEntity> mediaDownloadEntities =
+                                                    Util.getHighlightMediaEntities(responseBody.string(),highlight_id,media_id);
+                                            if (mediaDownloadEntities.size()>0){
+                                                backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
+                                            }
+                                            else{
+                                                backgroundThreadShortToast(getString(R.string.clipboard_not_valid));
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        catch (Exception e){
+                            toastMsg(getString(R.string.clipboard_not_valid));
+                        }
+
+                    }
+                }
+                else if (pasteData.contains("instagram.com/stories/")){
+                    Pattern pattern = Pattern.compile("/[0-9]+");
+                    Matcher matcher = pattern.matcher(pasteData);
+                    if (matcher.find()) {
+                        final String story_id = matcher.group().replace("/", "");
+                        try{
+                            String url = pasteData + "&__a=1";
+                            OkHttpClient client = Util.getHttpClient();
+
+                            final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                                    Util.USER_AGENT,Util.CONTENT_TYPE)
+                                    .build();
+
+                            client.newCall(request).enqueue(new Callback() {
+                                @Override
+                                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                                    backgroundThreadShortToast(getString(R.string.net_err));
+                                }
+
+                                @Override
+                                public void onResponse(@NotNull Call call, @NotNull Response response){
+                                    if(response.isSuccessful()){
+                                        ResponseBody responseBody = response.body();
+                                        if (responseBody != null){
+                                            try {
+                                                JSONObject responseJson = new JSONObject(responseBody.string());
+                                                if (responseJson.has("user") &&
+                                                        responseJson.getJSONObject("user").has("id")) {
+                                                    String user_id = responseJson.getJSONObject("user").getString("id");
+                                                    getStoryOfUserByStoryId(user_id,story_id);
+                                                }
+                                                else{
+                                                    throw new Exception();
+                                                }
+                                            }
+                                            catch(Exception e){
+                                                e.printStackTrace();
+                                                toastMsg(getString(R.string.clipboard_not_valid));
+                                            }
+                                        }
+                                    }
+                                }
+                            });
+                        }
+                        catch (Exception e){
+                            e.printStackTrace();
+                            toastMsg(getString(R.string.clipboard_not_valid));
+                        }
+
+                    }
+                    else{
+                        toastMsg(getString(R.string.clipboard_not_valid));
+                    }
+                }
                 else{
                     toastMsg(getString(R.string.clipboard_not_valid));
                 }
             }
         }
+    }
+
+    public void getStoryOfUserByStoryId(String user_id, final String story_id){
+        OkHttpClient client = Util.getHttpClient();
+        String url = Util.URL_HOST + Util.PATH_GET_STORY;
+        url = String.format(url,user_id);
+        final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                Util.USER_AGENT,Util.CONTENT_TYPE).build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                e.printStackTrace();
+                backgroundThreadShortToast(getString(R.string.net_err));
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if(response.isSuccessful()){
+                    ResponseBody responseBody = response.body();
+                    final String responseGetStory;
+                    if (responseBody != null){
+                        responseGetStory = responseBody.string();
+                    }
+                    else{
+                        toastMsg(getString(R.string.smth_wrong));
+                        return;
+                    }
+
+                    JSONObject json;
+                    try {
+                        json = new JSONObject(responseGetStory);
+                        if (json.has("reel") && json.isNull("reel")) {
+                            backgroundThreadShortToast(getString(R.string.no_story));
+                        }
+                        else if (json.has("reel")){
+                            JSONArray items = json.getJSONObject("reel").getJSONArray("items");
+                            JSONObject item;
+                            for (int i = 0; i < items.length(); i++) {
+                                item = items.getJSONObject(i);
+                                if (item.getString("pk").equals(story_id)){
+                                    ArrayList<MediaDownloadEntity> mediaDownloadEntities = new ArrayList<>();
+                                    int media_type = item.getInt("media_type");
+                                    String media_id = item.getString("id");
+                                    if (media_type == 1){
+                                        JSONArray imgCandidates = item.getJSONObject("image_versions2")
+                                                .getJSONArray("candidates");
+                                        JSONObject candidate;
+                                        for (int j=0; j<imgCandidates.length(); j++){
+                                            candidate = imgCandidates.getJSONObject(j);
+                                            mediaDownloadEntities.add(new MediaDownloadEntity(candidate.getString("url"),
+                                                    candidate.getString("height"),candidate.getString("width"),
+                                                    1, media_id));
+                                        }
+                                    }
+                                    else if (media_type == 2){
+                                        JSONObject videoVersion = item.getJSONArray("video_versions").getJSONObject(0);
+                                        mediaDownloadEntities.add(new MediaDownloadEntity(videoVersion.getString("url"),
+                                                videoVersion.getString("height"),videoVersion.getString("width"),
+                                                2, media_id));
+                                        if (item.has("image_versions2")){
+                                            JSONArray imgCandidates = item.getJSONObject("image_versions2")
+                                                    .getJSONArray("candidates");
+                                            mediaDownloadEntities.add(new MediaDownloadEntity(imgCandidates.getJSONObject(0).getString("url"),
+                                                    imgCandidates.getJSONObject(0).getString("height"),
+                                                    imgCandidates.getJSONObject(0).getString("width"),
+                                                    1, media_id));
+                                        }
+                                    }
+                                    backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
+                                    break;
+                                }
+                            }
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        backgroundThreadShortToast(getString(R.string.no_story));
+                    }
+
+                }
+            }
+        });
     }
 
     public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities, final Activity context) {
@@ -654,6 +857,10 @@ public class MainActivity extends AppCompatActivity
 
                     }
                 });
+                Random random = new Random();
+                boolean firstRadioChecked = false;
+                int firstRadio = 0;
+                int slideNumber = 1;
                 for(int i=0; i<mediaDownloadEntities.size(); i++){
                     if (mediaDownloadEntities.get(i) == null){
                         View vvv = new View(context);
@@ -661,8 +868,31 @@ public class MainActivity extends AppCompatActivity
                                 LinearLayout.LayoutParams.MATCH_PARENT,
                                 5
                         ));
-                        vvv.setBackgroundColor(Color.parseColor("#B3B3B3"));
+                        String colorCode = String.format("#%06x", random.nextInt(0xffffff + 1));
+                        vvv.setBackgroundColor(Color.parseColor(colorCode));
                         rg.addView(vvv);
+                        RadioButton rb = new RadioButton(context);
+                        rb.setButtonDrawable(R.drawable.ic_panorama_black_24dp);
+                        rb.setButtonTintList(new ColorStateList(new int[][] {
+                                new int[] { android.R.attr.state_enabled}, // enabled
+                                new int[] {-android.R.attr.state_enabled}, // disabled
+                                new int[] {-android.R.attr.state_checked}, // unchecked
+                                new int[] { android.R.attr.state_pressed}  // pressed
+                        },
+                                new int[] {
+                                        Color.parseColor(colorCode),
+                                        Color.parseColor(colorCode),
+                                        Color.parseColor(colorCode),
+                                        Color.parseColor(colorCode)
+                        }));
+                        rb.setText("# "+ slideNumber++);
+                        rb.setClickable(false);
+                        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT);
+                        params.gravity = Gravity.CENTER;
+                        rb.setLayoutParams(params);
+                        rg.addView(rb);
                         continue;
                     }
                     RadioButton rb=new RadioButton(context);
@@ -676,8 +906,12 @@ public class MainActivity extends AppCompatActivity
                     rb.setText(text);
                     rb.setId(i);
                     rg.addView(rb);
+                    if(!firstRadioChecked){
+                        firstRadio = i;
+                        firstRadioChecked = true;
+                    }
                 }
-                rg.check(0);
+                rg.check(firstRadio);
                 dialog.show();
 
             }
@@ -730,6 +964,9 @@ public class MainActivity extends AppCompatActivity
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
                                         context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+
+                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                        new String[] {"image/*"}, null);
                             }
                             catch (IOException e){
                                 Util.checkPermission(getParent());
@@ -768,6 +1005,9 @@ public class MainActivity extends AppCompatActivity
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
                                         context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+
+                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                        new String[] {"video/*"}, null);
                             }
                             catch (IOException e){
                                 Util.checkPermission(getParent());
@@ -802,6 +1042,8 @@ public class MainActivity extends AppCompatActivity
                                 contentText = String.format(getString(R.string.video_downloaded),media.getId(),media.getDimensions());
                             }
                             mBuilder.setContentText( contentText );
+                            mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                            mBuilder.setVibrate(new long[] {100,100});
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }
 
@@ -812,7 +1054,6 @@ public class MainActivity extends AppCompatActivity
         });
 
     }
-
 
 
 
@@ -840,18 +1081,17 @@ public class MainActivity extends AppCompatActivity
         OkHttpClient client = Util.getHttpClient();
         String url;
         if (followType == 1){
-            url = getString(R.string.url_host) + getString(R.string.path_get_followers);
+            url = Util.URL_HOST + Util.PATH_GET_FOLLOWERS;
             url = String.format(url,id);
         }
         else{
-            url = getString(R.string.url_host) + getString(R.string.path_get_followings);
+            url = Util.URL_HOST + Util.PATH_GET_FOLLOWINGS;
             url = String.format(url,id);
         }
 
         final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
-        Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
-                getString(R.string.content_type)).build();
-
+        Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                Util.USER_AGENT,Util.CONTENT_TYPE).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -929,10 +1169,10 @@ public class MainActivity extends AppCompatActivity
 
     public void getStoryOfUser(String userId){
         OkHttpClient client = Util.getHttpClient();
-        String url = getString(R.string.url_host) + getString(R.string.path_get_story);
+        String url = Util.URL_HOST + Util.PATH_GET_STORY;
         url = String.format(url,userId);
-        final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID, getString(R.string.user_agent),
-                getString(R.string.content_type)).build();
+        final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                Util.USER_AGENT,Util.CONTENT_TYPE).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -983,11 +1223,10 @@ public class MainActivity extends AppCompatActivity
 
     public void getStoryReels(){
         final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
-        String url = getString(R.string.url_host) + getString(R.string.path_reels_tray);
+        String url = Util.URL_HOST + Util.PATH_REELS_TRAY;
         OkHttpClient client = Util.getHttpClient();
         final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
-                getString(R.string.user_agent),
-                getString(R.string.content_type))
+                Util.USER_AGENT,Util.CONTENT_TYPE)
                 .post(new okhttp3.FormBody.Builder().build())
                 .build();
 
@@ -1113,13 +1352,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void logout(){
-        String urlLogout = getString(R.string.url_host) + getString(R.string.path_logout);
+        String urlLogout = Util.URL_HOST + Util.PATH_LOGOUT;
         OkHttpClient client = Util.getHttpClient();
         final Request request = new Request.Builder()
                 .url(urlLogout)
-                .header("User-Agent", getString(R.string.user_agent))
+                .header("User-Agent", Util.USER_AGENT)
                 .addHeader("Cookie", SESSION_ID)
-                .addHeader("Content-Type", getString(R.string.content_type))
+                .addHeader("Content-Type", Util.CONTENT_TYPE)
                 .post(new okhttp3.FormBody.Builder().build())
                 .build();
 

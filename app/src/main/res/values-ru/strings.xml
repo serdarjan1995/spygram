@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Spygram</string>
+    <string name="app_name">Instagram Story Downloader</string>
     <string name="navigation_drawer_open">Открыть навигацию</string>
     <string name="navigation_drawer_close">Закрыть навигацию</string>
-    <string name="nav_header_title">Spygram</string>
+    <string name="nav_header_title">Instagram Story Downloader</string>
     <string name="action_settings">Настройки</string>
     <string name="menu_key">Установить ключ шифрования</string>
     <string name="menu_followers">Подписки</string>
@@ -11,17 +11,6 @@
     <string name="menu_send">Отправить</string>
     <string name="menu_download_by_link">Скачать по ссылке</string>
     <string name="menu_download_how_to">Как скачать</string>
-    <string name="url_host">https://i.instagram.com</string>
-    <string name="path_get_followers">/api/v1/friendships/%s/followers/</string>
-    <string name="path_get_followings">/api/v1/friendships/%s/following/</string>
-    <string name="path_get_story">/api/v1/feed/user/%s/story/</string>
-    <string name="path_logout">/api/v1/accounts/logout/</string>
-    <string name="path_login">/api/v1/accounts/login/</string>
-    <string name="path_login_2fa">/api/v1/accounts/two_factor_login/</string>
-    <string name="path_reels_tray">/api/v1/feed/reels_tray/</string>
-    <string name="content_type">Application/x-www-form-urlencoded</string>
-    <string name="user_agent">Instagram 99.0.0.32.182 Android</string>
-    <string name="url_pp_download">https://instadp-cors-222621.appspot.com/get-hd?id=</string>
     <string name="sign_in">Войти</string>
     <string name="password">Пароль</string>
     <string name="username">Имя пользователя</string>
@@ -31,8 +20,6 @@
     <string name="_2fa_auth_code">2-х факторный код</string>
     <string name="text_2fa">Похоже, ваш аккаунт защищен двухфакторной аутентификацией.\nПожалуйста, введите проверочный код, который вы должны получить в течение нескольких минут</string>
     <string name="logout_str">Выйти | Очистить сессию</string>
-    <string name="banner_unit_id">ca-app-pub-2181561381492488/4184114792</string>
-    <string name="native_ad_unit_id">ca-app-pub-2181561381492488/8025773996</string>
     <string name="ad_attribution">Реклама</string>
     <string name="keyphrase_error_msg">Пожалуйста, проверьте вашу ключевую фразу.</string>
     <string name="keyphrase_empty">Пожалуйста, введите ваш пароль</string>

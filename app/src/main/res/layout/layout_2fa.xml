@@ -17,6 +17,16 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Body1"
         android:textSize="18sp"
         android:textStyle="bold|italic" />
+    <TextView
+        android:id="@+id/textView2fa_phonenumber"
+        android:layout_width="277dp"
+        android:layout_height="41dp"
+        android:layout_gravity="center_horizontal"
+        android:text=""
+        android:textAlignment="center"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+        android:textSize="18sp"
+        android:textStyle="bold|italic" />
 
     <EditText
         android:id="@+id/editText_2fa"
@@ -42,14 +52,5 @@
 
 
 
-    <TextView
-        android:id="@+id/textView2fa_phonenumber"
-        android:layout_width="277dp"
-        android:layout_height="41dp"
-        android:layout_marginTop="215dp"
-        android:text=""
-        android:textAlignment="center"
-        android:textAppearance="@style/TextAppearance.AppCompat.Body1"
-        android:textSize="18sp"
-        android:textStyle="bold|italic" />
+
 </LinearLayout>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.ins.spygram">
+    package="com.ins.story.downloader">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -16,14 +16,14 @@
         android:theme="@style/AppTheme">
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-2181561381492488~2288563289"/>
-        <activity android:name=".Activity2FA" android:screenOrientation = "portrait"/>
-        <activity android:name=".SetUpKeyphraseActivity" android:screenOrientation = "portrait" />
-        <activity android:name=".LoginActivity" android:screenOrientation = "portrait" />
-        <activity android:name=".StoryViewer" android:screenOrientation = "portrait" />
-        <activity android:name=".ChallengeActivity" android:screenOrientation = "portrait" />
+            android:value="ca-app-pub-2181561381492488~1594857312"/>
+        <activity android:name="com.ins.story.downloader.Activity2FA" android:screenOrientation = "portrait"/>
+        <activity android:name="com.ins.story.downloader.SetUpKeyphraseActivity" android:screenOrientation = "portrait" />
+        <activity android:name="com.ins.story.downloader.LoginActivity" android:screenOrientation = "portrait" />
+        <activity android:name="com.ins.story.downloader.StoryViewer" android:screenOrientation = "portrait" />
+        <activity android:name="com.ins.story.downloader.ChallengeActivity" android:screenOrientation = "portrait" />
         <activity
-            android:name=".MainActivity"
+            android:name="com.ins.story.downloader.MainActivity"
             android:screenOrientation = "portrait"
             android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar">
@@ -34,7 +34,7 @@
             </intent-filter>
         </activity>
         <provider
-            android:name=".GenericFileProvider"
+            android:name="com.ins.story.downloader.GenericFileProvider"
             android:authorities="${applicationId}.mfileprovider"
             android:exported="false"
             android:grantUriPermissions="true">

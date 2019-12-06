@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -13,6 +13,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+
+import com.ins.story.downloader.Util;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -71,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
 
 
     private void loginTry(JSONObject json){
-        String urlLogin = getString(R.string.url_host) + getString(R.string.path_login);
+        String urlLogin = Util.URL_HOST + Util.PATH_LOGIN;
         OkHttpClient client;
         RequestBody requestBody;
         try {
@@ -84,8 +87,7 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
         final Request request = Util.getRequestHeaderBuilder(urlLogin, "",
-                getString(R.string.user_agent),
-                getString(R.string.content_type))
+                Util.USER_AGENT, Util.CONTENT_TYPE)
                 .post(requestBody)
                 .build();
 
@@ -179,7 +181,7 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void requestChallenge(String url, final String mid){
-        String urlLogin = getString(R.string.url_host) + url + "?device_id=" + androidId;
+        String urlLogin = Util.URL_HOST + url + "?device_id=" + androidId;
         OkHttpClient client;
         try {
             client = Util.getHttpClient();
@@ -190,7 +192,7 @@ public class LoginActivity extends AppCompatActivity {
             return;
         }
         final Request request = Util.getRequestHeaderBuilder(urlLogin, "mid=" + mid,
-                getString(R.string.user_agent),"")
+                Util.USER_AGENT,"")
                 .build();
 
         client.newCall(request).enqueue(new Callback() {

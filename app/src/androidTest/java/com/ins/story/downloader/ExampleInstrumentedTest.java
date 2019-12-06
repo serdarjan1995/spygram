@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.downloader;
 
 import android.content.Context;
 
@@ -22,6 +22,6 @@ public class ExampleInstrumentedTest {
         // Context of the app under test.
         Context appContext = InstrumentationRegistry.getTargetContext();
 
-        assertEquals("com.ins.spygram", appContext.getPackageName());
+        assertEquals("com.ins.story.downloader", appContext.getPackageName());
     }
 }

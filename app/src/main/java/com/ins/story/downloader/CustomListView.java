@@ -1,9 +1,8 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
@@ -11,6 +10,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Environment;
 import android.os.Handler;
@@ -104,7 +104,7 @@ public class CustomListView extends ArrayAdapter<String> {
         viewHolder.downloadPpButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String url = context.getString(R.string.url_pp_download) +
+                String url = Util.URL_PP_DOWNLOAD+
                         followers.get(finalPositionInt).getUserId();
                 OkHttpClient client = new OkHttpClient.Builder().build();
                 final Request request = new Request.Builder()
@@ -252,6 +252,8 @@ public class CustomListView extends ArrayAdapter<String> {
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
                             out.flush();
                             out.close();
+                            MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                    new String[] {"image/*"}, null);
                         }
                         catch (IOException e){
                             Util.checkPermission(context);
@@ -274,6 +276,8 @@ public class CustomListView extends ArrayAdapter<String> {
                             mBuilder.setContentTitle(context.getString(R.string.app_name));
                             mBuilder.setContentIntent(contentIntent);
                             mBuilder.setAutoCancel(true);
+                            mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
+                            mBuilder.setVibrate(new long[] {100,100});
                             mBuilder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
                             mBuilder.setSmallIcon(R.drawable.ic_wallpaper_black_24dp);
                             mBuilder.setContentText( String.format(context.getString(R.string.pp_downloaded),username,dim) );

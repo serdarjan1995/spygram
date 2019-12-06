@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -57,7 +57,7 @@ public class Activity2FA extends AppCompatActivity {
                             toastMsg(getString(R.string.enter_ver_code));
                         }
                         else{
-                            String urlLogin2Fa = getString(R.string.url_host) + getString(R.string.path_login_2fa);
+                            String urlLogin2Fa = Util.URL_HOST + Util.PATH_LOGIN_2FA;
                             OkHttpClient client = Util.getHttpClient();
                             JSONObject json = new JSONObject();
                             String androidId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
@@ -71,8 +71,7 @@ public class Activity2FA extends AppCompatActivity {
                             }
                             RequestBody requestBody = Util.getRequestBody(json);
                             final Request request = Util.getRequestHeaderBuilder(urlLogin2Fa, "",
-                                    getString(R.string.user_agent),
-                                    getString(R.string.content_type))
+                                    Util.USER_AGENT,Util.CONTENT_TYPE)
                                     .post(requestBody)
                                     .build();
 

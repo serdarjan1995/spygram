@@ -13,8 +13,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="70dp"
-        android:layout_marginBottom="22dp"
+        android:layout_marginTop="30dp"
+        android:layout_marginBottom="10dp"
         android:ems="10"
         android:hint="@string/keyphrase"
         android:inputType="textPassword" />
@@ -24,7 +24,6 @@
         android:layout_width="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="22dp"
         android:onClick="onClickKeypassBtn"
         android:text="@string/set_keyphrase" />
 

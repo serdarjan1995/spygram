@@ -1,9 +1,11 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentStatePagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.rd.PageIndicatorView;
@@ -12,7 +14,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.ArrayList;
-import java.util.List;
 
 public class StoryViewer extends FragmentActivity {
 
@@ -25,7 +26,13 @@ public class StoryViewer extends FragmentActivity {
         setContentView(R.layout.story_layout);
         Bundle b = getIntent().getExtras();
         String response;
-
+        ImageView backButton = findViewById(R.id.story_back);
+        backButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                onBackPressed();
+            }
+        });
         pager = findViewById(R.id.ViewPagerStory);
         if(b != null) {
             response = b.getString("response");

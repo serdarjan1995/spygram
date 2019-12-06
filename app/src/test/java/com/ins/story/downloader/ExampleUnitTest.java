@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.downloader;
 
 import org.junit.Test;
 

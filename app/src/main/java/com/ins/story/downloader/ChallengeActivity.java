@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -85,7 +85,7 @@ public class ChallengeActivity extends AppCompatActivity {
     }
 
     public void getCodeChallenge(JSONObject json){
-        String urlChallenge = getString(R.string.url_host) + challenge_path;
+        String urlChallenge = Util.URL_HOST + challenge_path;
         OkHttpClient client;
         RequestBody requestBody;
         try {
@@ -98,8 +98,7 @@ public class ChallengeActivity extends AppCompatActivity {
             return;
         }
         final Request request = Util.getRequestHeaderBuilder(urlChallenge, "mid=" + mid,
-                getString(R.string.user_agent),
-                getString(R.string.content_type))
+                Util.USER_AGENT,Util.CONTENT_TYPE)
                 .post(requestBody)
                 .build();
         client.newCall(request).enqueue(new Callback() {
@@ -149,7 +148,7 @@ public class ChallengeActivity extends AppCompatActivity {
             backgroundThreadShortToast(getString(R.string.gen_error));
             return;
         }
-        String urlChallenge = getString(R.string.url_host) + challenge_path;
+        String urlChallenge = Util.URL_HOST + challenge_path;
         OkHttpClient client;
         RequestBody requestBody;
         try {
@@ -161,8 +160,7 @@ public class ChallengeActivity extends AppCompatActivity {
             return;
         }
         final Request request = Util.getRequestHeaderBuilder(urlChallenge, "mid=" + mid,
-                getString(R.string.user_agent),
-                getString(R.string.content_type))
+                Util.USER_AGENT,Util.CONTENT_TYPE)
                 .post(requestBody)
                 .build();
         client.newCall(request).enqueue(new Callback() {

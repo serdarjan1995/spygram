@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -35,6 +35,20 @@ import okhttp3.ResponseBody;
 public class Util {
 
     static String NOTIFICATION_CHANNEL_ID = "10001";
+    static String URL_HOST = "https://i.instagram.com";
+    static String PATH_GET_FOLLOWERS = "/api/v1/friendships/%s/followers/";
+    static String PATH_GET_FOLLOWINGS = "/api/v1/friendships/%s/following/";
+    static String PATH_GET_STORY = "/api/v1/feed/user/%s/story/";
+    static String PATH_LOGOUT = "/api/v1/accounts/logout/";
+    static String PATH_LOGIN = "/api/v1/accounts/login/";
+    static String PATH_LOGIN_2FA = "/api/v1/accounts/two_factor_login/";
+    static String PATH_REELS_TRAY = "/api/v1/feed/reels_tray/";
+    static String PATH_REELS_MEDIA = "/api/v1/feed/reels_media/";
+    static String CONTENT_TYPE = "Application/x-www-form-urlencoded";
+    static String USER_AGENT = "Instagram 99.0.0.32.182 Android";
+    static String URL_PP_DOWNLOAD = "https://instadp-cors-222621.appspot.com/get-hd?id=";
+    static String BANNER_UNIT_ID = "ca-app-pub-2181561381492488/3718457776";
+    static String NATIVE_AD_UNIT_ID = "ca-app-pub-2181561381492488/2213804414";
 
 
     public static String toHexString(byte[] bytes) {
@@ -185,8 +199,6 @@ public class Util {
                 Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},1);
-
-
         }
         if (ContextCompat.checkSelfPermission(context,
                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -210,7 +222,7 @@ public class Util {
                         && !shortcode_media.getBoolean("is_video")){
                     //this is image
                     JSONArray displayResources = shortcode_media.getJSONArray("display_resources");
-                    for (int i=0; i<displayResources.length(); i++){
+                    for (int i=displayResources.length()-1; i>=0; i--){
                         url = displayResources.getJSONObject(i).getString("src");
                         config_height = displayResources.getJSONObject(i).getString("config_height");
                         config_width = displayResources.getJSONObject(i).getString("config_width");
@@ -233,7 +245,9 @@ public class Util {
                         && shortcode_media.getString("__typename").equals("GraphSidecar")
                         && !shortcode_media.getBoolean("is_video")){
                     //this is slide media
-                    JSONArray slide_edges = shortcode_media.getJSONObject("edge_sidecar_to_children").getJSONArray("edges");
+                    JSONArray slide_edges = shortcode_media.getJSONObject("edge_sidecar_to_children")
+                            .getJSONArray("edges");
+                    mediaDownloadEntities.add(null);
                     for (int k=0; k<slide_edges.length(); k++) {
                         JSONObject node = slide_edges.getJSONObject(k).getJSONObject("node");
                         if (node.has("__typename")
@@ -241,7 +255,7 @@ public class Util {
                                 && !node.getBoolean("is_video")){
                             //this is image
                             JSONArray displayResources = node.getJSONArray("display_resources");
-                            for (int i=0; i<displayResources.length(); i++){
+                            for (int i=displayResources.length()-1; i>=0; i--){
                                 url = displayResources.getJSONObject(i).getString("src");
                                 config_height = displayResources.getJSONObject(i).getString("config_height");
                                 config_width = displayResources.getJSONObject(i).getString("config_width");
@@ -263,6 +277,60 @@ public class Util {
                         mediaDownloadEntities.add(null);
                     }
                 }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return mediaDownloadEntities;
+    }
+
+    public static ArrayList<MediaDownloadEntity> getHighlightMediaEntities(String response,
+                                                                           String highlight_id,
+                                                                           String media_id){
+        ArrayList<MediaDownloadEntity> mediaDownloadEntities = new ArrayList<>();
+        try{
+            JSONObject responseJson = new JSONObject(response);
+            if (responseJson.has("reels") &&
+                    responseJson.getJSONObject("reels").has(highlight_id)){
+                JSONObject highlight = responseJson.getJSONObject("reels").getJSONObject(highlight_id);
+                JSONArray highlight_items = highlight.getJSONArray("items");
+                JSONObject item;
+                String reel_item_id;
+                for (int i=0; i<highlight_items.length(); i++){
+                    item = highlight_items.getJSONObject(i);
+                    reel_item_id = item.getString("id");
+                    if(reel_item_id.equals(media_id)){
+                        int media_type = item.getInt("media_type");
+                        if (media_type == 1){
+                            JSONArray imgCandidates = item.getJSONObject("image_versions2")
+                                    .getJSONArray("candidates");
+                            JSONObject candidate;
+                            for (int j=0; j<imgCandidates.length(); j++){
+                                candidate = imgCandidates.getJSONObject(j);
+                                mediaDownloadEntities.add(new MediaDownloadEntity(candidate.getString("url"),
+                                        candidate.getString("height"),candidate.getString("width"),
+                                        1, media_id));
+                            }
+                        }
+                        else if (media_type == 2){
+                            JSONObject videoVersion = item.getJSONArray("video_versions").getJSONObject(0);
+                            mediaDownloadEntities.add(new MediaDownloadEntity(videoVersion.getString("url"),
+                                    videoVersion.getString("height"),videoVersion.getString("width"),
+                                    2, media_id));
+                            if (item.has("image_versions2")){
+                                JSONArray imgCandidates = item.getJSONObject("image_versions2")
+                                        .getJSONArray("candidates");
+                                mediaDownloadEntities.add(new MediaDownloadEntity(imgCandidates.getJSONObject(0).getString("url"),
+                                        imgCandidates.getJSONObject(0).getString("height"),
+                                        imgCandidates.getJSONObject(0).getString("width"),
+                                        1, media_id));
+                            }
+                        }
+                        break;
+                    }
+                }
+
+
             }
         } catch (Exception e) {
             e.printStackTrace();

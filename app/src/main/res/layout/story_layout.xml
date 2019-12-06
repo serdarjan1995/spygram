@@ -7,6 +7,8 @@
     android:layout_height="match_parent"
     android:id="@+id/relativeLayout">
 
+
+
     <androidx.viewpager.widget.ViewPager
         android:id="@+id/ViewPagerStory"
         android:layout_width="wrap_content"
@@ -33,5 +35,14 @@
         app:piv_viewPager="@id/ViewPagerStory"
         attrs:piv_padding="12dp"
         attrs:piv_radius="8dp" />
+
+    <ImageView
+        android:id="@+id/story_back"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:background="#8A039BE5"
+        android:src="@drawable/ic_navigate_before_black_24dp" />
 
 </RelativeLayout>

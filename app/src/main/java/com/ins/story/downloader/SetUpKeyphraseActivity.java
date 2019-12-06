@@ -1,4 +1,4 @@
-package com.ins.spygram;
+package com.ins.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -106,11 +106,10 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
     }
 
     public void logout(){
-        String urlLogout = getString(R.string.url_host) + getString(R.string.path_logout);
+        String urlLogout = Util.URL_HOST + Util.PATH_LOGOUT;
         OkHttpClient client = Util.getHttpClient();
         final Request request = Util.getRequestHeaderBuilder(urlLogout, sessionid,
-                                    getString(R.string.user_agent),
-                                    getString(R.string.content_type))
+                                    Util.USER_AGENT,Util.CONTENT_TYPE)
                 .post(new okhttp3.FormBody.Builder().build())
                 .build();
 
