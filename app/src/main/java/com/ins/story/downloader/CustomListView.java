@@ -42,11 +42,14 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -127,34 +130,69 @@ public class CustomListView extends ArrayAdapter<String> {
                                 JSONObject jsonResponse;
                                 try {
                                     jsonResponse = new JSONObject(responseBody.string());
-                                    JSONObject user = jsonResponse.getJSONObject("user");
-                                    ArrayList<MediaDownloadEntity> imageDownloadEntities = new ArrayList<>();
+                                    if (jsonResponse.has("user")){
+                                        JSONObject user = jsonResponse.getJSONObject("user");
+                                        ArrayList<MediaDownloadEntity> imageDownloadEntities = new ArrayList<>();
 
-                                    if (user.has("hd_profile_pic_url_info")){
-                                        JSONObject hd_profile_pic_url_info = user.getJSONObject("hd_profile_pic_url_info");
-                                        imageDownloadEntities.add(new MediaDownloadEntity(hd_profile_pic_url_info.getString("url"),
-                                                hd_profile_pic_url_info.getString("height"),
-                                                hd_profile_pic_url_info.getString("width"),1,""));
-                                    }
-                                    if (user.has("hd_profile_pic_versions")){
-                                        JSONArray hd_profile_pic_versions = user.getJSONArray("hd_profile_pic_versions");
-                                        for(int i=0; i<hd_profile_pic_versions.length(); i++){
-                                            imageDownloadEntities.add(new MediaDownloadEntity(
-                                                    hd_profile_pic_versions.getJSONObject(i).getString("url"),
-                                                    hd_profile_pic_versions.getJSONObject(i).getString("height"),
-                                                    hd_profile_pic_versions.getJSONObject(i).getString("width"),1,""));
+                                        if (user.has("hd_profile_pic_url_info")){
+                                            JSONObject hd_profile_pic_url_info = user.getJSONObject("hd_profile_pic_url_info");
+                                            imageDownloadEntities.add(new MediaDownloadEntity(hd_profile_pic_url_info.getString("url"),
+                                                    hd_profile_pic_url_info.getString("height"),
+                                                    hd_profile_pic_url_info.getString("width"),1,""));
                                         }
+                                        if (user.has("hd_profile_pic_versions")){
+                                            JSONArray hd_profile_pic_versions = user.getJSONArray("hd_profile_pic_versions");
+                                            for(int i=0; i<hd_profile_pic_versions.length(); i++){
+                                                imageDownloadEntities.add(new MediaDownloadEntity(
+                                                        hd_profile_pic_versions.getJSONObject(i).getString("url"),
+                                                        hd_profile_pic_versions.getJSONObject(i).getString("height"),
+                                                        hd_profile_pic_versions.getJSONObject(i).getString("width"),1,""));
+                                            }
+                                        }
+
+                                        backgroundThreadDialog(imageDownloadEntities,followers.get(finalPositionInt).getUsername());
                                     }
-
-                                    backgroundThreadDialog(imageDownloadEntities,followers.get(finalPositionInt).getUsername());
-
                                 }
                                 catch (Exception e) {
                                     e.printStackTrace();
+                                    backgroundThreadShortToast(context.getString(R.string.net_err));
                                 }
 
                             }
 
+                        }
+                        else{
+                            String url = Util.URL_PP_DOWNLOAD_IZ;
+                            OkHttpClient client = new OkHttpClient.Builder().build();
+                            RequestBody req = new okhttp3.FormBody.Builder()
+                                    .add("submit", followers.get(finalPositionInt).getUsername())
+                                    .build();
+                            final Request request = new Request.Builder()
+                                    .url(url)
+                                    .post(req)
+                                    .build();
+
+                            client.newCall(request).enqueue(new Callback() {
+                                @Override
+                                public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                                    e.printStackTrace();
+                                    backgroundThreadShortToast(context.getString(R.string.net_err));
+                                }
+
+                                @Override
+                                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                                    String response_str = response.body().string();
+                                    Pattern pattern = Pattern.compile("https://scontent.*.com");
+                                    Matcher matcher = pattern.matcher(response_str);
+                                    if (matcher.find()) {
+                                        String pp_url = matcher.group();
+                                        downloadImage(pp_url,followers.get(finalPositionInt).getUsername(),"0");
+                                    }
+                                    else{
+                                        backgroundThreadShortToast(context.getString(R.string.net_err));
+                                    }
+                                }
+                            });
                         }
                     }
                 });

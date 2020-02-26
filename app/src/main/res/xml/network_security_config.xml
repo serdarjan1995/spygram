@@ -11,7 +11,6 @@
             <pin digest="SHA-256">mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=</pin>
             <pin digest="SHA-256">k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=</pin>
             <pin digest="SHA-256">WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=</pin>
-            <pin digest="SHA-256">Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=</pin>
         </pin-set>
     </domain-config>
 </network-security-config>

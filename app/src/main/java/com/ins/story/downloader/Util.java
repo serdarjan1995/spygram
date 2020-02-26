@@ -47,6 +47,7 @@ public class Util {
     static String CONTENT_TYPE = "Application/x-www-form-urlencoded";
     static String USER_AGENT = "Instagram 99.0.0.32.182 Android";
     static String URL_PP_DOWNLOAD = "https://instadp-cors-222621.appspot.com/get-hd?id=";
+    static String URL_PP_DOWNLOAD_IZ = "http://izuum.com/index.php";
     static String BANNER_UNIT_ID = "ca-app-pub-2181561381492488/3718457776";
     static String NATIVE_AD_UNIT_ID = "ca-app-pub-2181561381492488/2213804414";
 
@@ -122,7 +123,6 @@ public class Util {
                 .add(hostname, "sha256/mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=")
                 .add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
                 .add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
-                .add(hostname, "sha256/Q/ZoPwaZN6kZ0HU9LLQKBl+xx+wUuxP7jegEdu9T8WI=")
                 .build();
         OkHttpClient client = new OkHttpClient.Builder()
                 .certificatePinner(certificatePinner)
@@ -274,7 +274,10 @@ public class Util {
                             mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
                                     2,node.getString("id")));
                         }
-                        mediaDownloadEntities.add(null);
+                        if (k != slide_edges.length()-1){
+                            mediaDownloadEntities.add(null);
+                        }
+
                     }
                 }
             }

@@ -484,12 +484,12 @@ public class MainActivity extends AppCompatActivity
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+        //int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
+        //if (id == R.id.action_settings) {
+        //    return true;
+        //}
 
         return super.onOptionsItemSelected(item);
     }
@@ -731,7 +731,7 @@ public class MainActivity extends AppCompatActivity
                                             }
                                             catch(Exception e){
                                                 e.printStackTrace();
-                                                toastMsg(getString(R.string.clipboard_not_valid));
+                                                backgroundThreadShortToast(getString(R.string.clipboard_not_valid));
                                             }
                                         }
                                     }
@@ -791,9 +791,11 @@ public class MainActivity extends AppCompatActivity
                         else if (json.has("reel")){
                             JSONArray items = json.getJSONObject("reel").getJSONArray("items");
                             JSONObject item;
+                            boolean found = false;
                             for (int i = 0; i < items.length(); i++) {
                                 item = items.getJSONObject(i);
                                 if (item.getString("pk").equals(story_id)){
+                                    found = true;
                                     ArrayList<MediaDownloadEntity> mediaDownloadEntities = new ArrayList<>();
                                     int media_type = item.getInt("media_type");
                                     String media_id = item.getString("id");
@@ -825,6 +827,9 @@ public class MainActivity extends AppCompatActivity
                                     backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
                                     break;
                                 }
+                            }
+                            if (!found){
+                                backgroundThreadShortToast(getString(R.string.no_story));
                             }
                         }
                     } catch (JSONException e) {
