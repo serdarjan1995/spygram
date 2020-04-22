@@ -16,6 +16,11 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="AppTheme.Dark.Dialog" parent="ThemeOverlay.AppCompat.Light">
+        <item name="colorAccent">@color/lightblack</item>
+        <item name="android:textColorPrimary">@color/iron</item>
+        <item name="android:background">@color/gray_300</item>
+    </style>
 
     <style name="AppTheme.AdAttribution">
         <item name="android:layout_width">wrap_content</item>

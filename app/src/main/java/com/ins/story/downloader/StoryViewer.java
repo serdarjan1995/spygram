@@ -25,7 +25,7 @@ public class StoryViewer extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.story_layout);
         Bundle b = getIntent().getExtras();
-        String response;
+        String username;
         ImageView backButton = findViewById(R.id.story_back);
         backButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -35,24 +35,13 @@ public class StoryViewer extends FragmentActivity {
         });
         pager = findViewById(R.id.ViewPagerStory);
         if(b != null) {
-            response = b.getString("response");
-            if (response != null) {
-                try {
-                    JSONObject json = new JSONObject(response);
-                    if (json.has("reel") && json.isNull("reel")) {
-                        toastMsg(getString(R.string.no_story));
-                        finish();
-                        return;
-                    }
-                    JSONArray items = json.getJSONObject("reel").getJSONArray("items");
-                    String username = json.getJSONObject("reel").getJSONObject("user").getString("username");
-
-                    for (int i = 0; i < items.length(); i++) {
-                        storyEntities.add(new StoryEntity(items.getJSONObject(i),username));
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+            username = b.getString("username");
+            if (username != null) {
+                storyEntities = b.getParcelableArrayList("storyEntities");
+            }
+            else{
+                toastMsg(getString(R.string.gen_error));
+                finish();
             }
         }
 

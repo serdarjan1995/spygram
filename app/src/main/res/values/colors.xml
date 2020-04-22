@@ -8,4 +8,6 @@
     <color name="gray_50">#ECFAFAFA</color>
     <color name="gray_300">#8CE0E0E0</color>
     <color name="black_300">#8C242424</color>
+    <color name="white">#FFFFFF</color>
+    <color name="iron">#CCCCCC</color>
 </resources>

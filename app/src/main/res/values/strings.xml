@@ -18,6 +18,7 @@
     <string name="set_keyphrase">Set Keyphrase</string>
     <string name="encryption_text">Your session will be stored locally \nand it should be encrypted.\nPlease set your keyphrase which you will be asked when you open app</string>
     <string name="_2fa_auth_code">2FA auth code</string>
+    <string name="verification_code">Verification code</string>
     <string name="text_2fa">Seems like your account protected with 2FA.\nPlease enter verification code which you should receive within a few minutes</string>
     <string name="logout_str">Log out | Clear Session</string>
     <string name="ad_attribution">Ads</string>

@@ -9,10 +9,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -36,11 +39,31 @@ public class ChallengeActivity extends AppCompatActivity {
     private String androidId;
     private TextView phoneNumberTextView;
     private EditText codeChallengeEditText;
+    private Button sendChallengeButton;
+    private Handler handler;
+    private ViewAnimator progressview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_challenge);
+        handler = new Handler(ChallengeActivity.this.getMainLooper());
+        progressview = findViewById(R.id.progress_view_challenge);
+        progressview.setVisibility(ViewAnimator.INVISIBLE);
+        codeChallengeEditText = findViewById(R.id.editText_challenge);
+        sendChallengeButton = findViewById(R.id.buttonChallengeCode);
+        sendChallengeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                String codeChallenge = codeChallengeEditText.getText().toString();
+                if (codeChallenge.equals("")){
+                    toastMsg(getString(R.string.enter_ver_code));
+                }
+                else {
+                    sendCodeChallenge(codeChallenge);
+                }
+            }
+        });
         Bundle b = getIntent().getExtras();
         if (b != null) {
             String phone_number = b.getString("phone_number");
@@ -63,20 +86,7 @@ public class ChallengeActivity extends AppCompatActivity {
                 }
             }
             else if (step_name.equals("verify_code")) {
-                codeChallengeEditText = findViewById(R.id.editText_challenge);
-                Button sendChallengeButton = findViewById(R.id.buttonChallengeCode);
-                sendChallengeButton.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-                        String codeChallenge = codeChallengeEditText.getText().toString();
-                        if (codeChallenge.equals("")){
-                            toastMsg(getString(R.string.enter_ver_code));
-                        }
-                        else {
-                            sendCodeChallenge();
-                        }
-                    }
-                });
+                toastMsg(getString(R.string.enter_ver_code));
             }
             else{
                 toastMsg(getString(R.string.smth_wrong) + " Error code: 214");
@@ -85,13 +95,13 @@ public class ChallengeActivity extends AppCompatActivity {
     }
 
     public void getCodeChallenge(JSONObject json){
+        progressShow();
         String urlChallenge = Util.URL_HOST + challenge_path;
         OkHttpClient client;
         RequestBody requestBody;
         try {
             client = Util.getHttpClient();
             requestBody = Util.getRequestBody(json);
-
         }
         catch (Exception e){
             backgroundThreadShortToast(getString(R.string.net_err));
@@ -112,7 +122,7 @@ public class ChallengeActivity extends AppCompatActivity {
                                 r_response.getString("status").equals("ok") &&
                                 r_response.has("step_data") && r_response.has("step_name") &&
                                 r_response.getString("step_name").equals("verify_code")){
-                            sendCodeChallenge();
+                            //Done
                         }
                         else{
                             backgroundThreadShortToast(getString(R.string.fail_login) + " 2");
@@ -126,26 +136,28 @@ public class ChallengeActivity extends AppCompatActivity {
                 else{
                     backgroundThreadShortToast(getString(R.string.fail_login) + " 4");
                 }
+                progressHide();
             }
 
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
         });
     }
 
 
-    public void sendCodeChallenge(){
-        String codeChallenge = codeChallengeEditText.getText().toString();
+    public void sendCodeChallenge(String codeChallenge){
+        progressShow();
         JSONObject json = new JSONObject();
         try {
             json.put("security_code",codeChallenge);
             json.put("device_id",androidId);
-            getCodeChallenge(json);
         } catch (JSONException e) {
             e.printStackTrace();
             backgroundThreadShortToast(getString(R.string.gen_error));
+            progressHide();
             return;
         }
         String urlChallenge = Util.URL_HOST + challenge_path;
@@ -157,6 +169,7 @@ public class ChallengeActivity extends AppCompatActivity {
         }
         catch (Exception e){
             backgroundThreadShortToast(getString(R.string.net_err));
+            progressHide();
             return;
         }
         final Request request = Util.getRequestHeaderBuilder(urlChallenge, "mid=" + mid,
@@ -176,6 +189,7 @@ public class ChallengeActivity extends AppCompatActivity {
                                 r_response.getString("action").equals("close")){
                             Intent resultIntent = new Intent();
                             setResult(Activity.RESULT_OK, resultIntent);
+                            progressHide();
                             finish();
                         }
                         else{
@@ -190,11 +204,13 @@ public class ChallengeActivity extends AppCompatActivity {
                 else{
                     backgroundThreadShortToast(getString(R.string.fail_login) + " 7");
                 }
+                progressHide();
             }
 
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
         });
     }
@@ -228,5 +244,28 @@ public class ChallengeActivity extends AppCompatActivity {
 
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+    }
+
+    public void progressHide(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                sendChallengeButton.setEnabled(true);
+                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
+
+    public void progressShow(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                sendChallengeButton.setEnabled(false);
+                progressview.setVisibility(ViewAnimator.VISIBLE);
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
     }
 }

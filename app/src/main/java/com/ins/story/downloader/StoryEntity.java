@@ -61,6 +61,7 @@ public class StoryEntity implements Parcelable {
         username = in.readString();
         defaultMediaUrl = in.readString();
         mediaType = in.readInt();
+        mediaDownloadEntities = in.createTypedArrayList(MediaDownloadEntity.CREATOR);
     }
 
     @Override
@@ -70,6 +71,7 @@ public class StoryEntity implements Parcelable {
         dest.writeString(username);
         dest.writeString(defaultMediaUrl);
         dest.writeInt(mediaType);
+        dest.writeTypedList(mediaDownloadEntities);
     }
 
     @Override

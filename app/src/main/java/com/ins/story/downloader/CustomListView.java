@@ -19,6 +19,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -26,6 +27,7 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -58,24 +60,27 @@ public class CustomListView extends ArrayAdapter<String> {
     private ArrayList<UserFollow> followers;
     private Activity context;
     private boolean allHasStory;
-
+    private Handler handler;
+    private ViewAnimator progressView;
 
     @Override
     public int getCount() {
         return followers.size();
     }
 
-    public CustomListView(Activity context, ArrayList<UserFollow> followers, boolean allHasStory) {
+    public CustomListView(Activity context, ArrayList<UserFollow> followers, boolean allHaveStory) {
         super(context, R.layout.followers_list);
         this.context = context;
         this.followers = followers;
-        this.allHasStory = allHasStory;
+        this.allHasStory = allHaveStory;
+        handler = new Handler(Looper.getMainLooper());
+        progressView = context.findViewById(R.id.progress_main);
     }
 
     @Override
-    public View getView(int position, View convertView, ViewGroup parent) {
+    public View getView(int position, View convertView, final ViewGroup parent) {
         View r = convertView;
-        ViewHolder viewHolder;
+        final ViewHolder viewHolder;
         final int finalPositionInt = position;
 
         if (r == null)
@@ -86,8 +91,7 @@ public class CustomListView extends ArrayAdapter<String> {
             r.setTag(viewHolder);
 
         }
-        else
-        {
+        else{
             viewHolder = (ViewHolder) r.getTag();
         }
 
@@ -107,7 +111,13 @@ public class CustomListView extends ArrayAdapter<String> {
         viewHolder.downloadPpButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String url = Util.URL_PP_DOWNLOAD+
+                Util.checkPermission(context);
+                if (ContextCompat.checkSelfPermission(context,
+                        Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    return;
+                }
+                progressShow();
+                String url = Util.URL_PP_DOWNLOAD +
                         followers.get(finalPositionInt).getUserId();
                 OkHttpClient client = new OkHttpClient.Builder().build();
                 final Request request = new Request.Builder()
@@ -120,6 +130,7 @@ public class CustomListView extends ArrayAdapter<String> {
                     public void onFailure(@NotNull Call call, @NotNull IOException e) {
                         e.printStackTrace();
                         backgroundThreadShortToast(context.getString(R.string.net_err));
+                        progressHide();
                     }
 
                     @Override
@@ -131,15 +142,21 @@ public class CustomListView extends ArrayAdapter<String> {
                                 try {
                                     jsonResponse = new JSONObject(responseBody.string());
                                     if (jsonResponse.has("user")){
+                                       boolean success = true;
                                         JSONObject user = jsonResponse.getJSONObject("user");
                                         ArrayList<MediaDownloadEntity> imageDownloadEntities = new ArrayList<>();
 
                                         if (user.has("hd_profile_pic_url_info")){
                                             JSONObject hd_profile_pic_url_info = user.getJSONObject("hd_profile_pic_url_info");
-                                            imageDownloadEntities.add(new MediaDownloadEntity(hd_profile_pic_url_info.getString("url"),
+                                            imageDownloadEntities.add(new MediaDownloadEntity(
+                                                    hd_profile_pic_url_info.getString("url"),
                                                     hd_profile_pic_url_info.getString("height"),
                                                     hd_profile_pic_url_info.getString("width"),1,""));
                                         }
+                                        else{
+                                            success = false;
+                                        }
+
                                         if (user.has("hd_profile_pic_versions")){
                                             JSONArray hd_profile_pic_versions = user.getJSONArray("hd_profile_pic_versions");
                                             for(int i=0; i<hd_profile_pic_versions.length(); i++){
@@ -149,17 +166,26 @@ public class CustomListView extends ArrayAdapter<String> {
                                                         hd_profile_pic_versions.getJSONObject(i).getString("width"),1,""));
                                             }
                                         }
+                                        else{
+                                            success = false;
+                                        }
 
-                                        backgroundThreadDialog(imageDownloadEntities,followers.get(finalPositionInt).getUsername());
+                                        progressHide();
+                                        if (success){
+                                            backgroundThreadDialog(imageDownloadEntities,followers.get(finalPositionInt).getUsername());
+                                        }
+                                        else{
+                                            backgroundThreadShortToast("Please try again!");
+                                        }
+
                                     }
                                 }
                                 catch (Exception e) {
                                     e.printStackTrace();
                                     backgroundThreadShortToast(context.getString(R.string.net_err));
                                 }
-
                             }
-
+                            progressHide();
                         }
                         else{
                             String url = Util.URL_PP_DOWNLOAD_IZ;
@@ -177,13 +203,15 @@ public class CustomListView extends ArrayAdapter<String> {
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
                                     e.printStackTrace();
                                     backgroundThreadShortToast(context.getString(R.string.net_err));
+                                    progressHide();
                                 }
 
                                 @Override
                                 public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                                     String response_str = response.body().string();
-                                    Pattern pattern = Pattern.compile("https://scontent.*.com");
+                                    Pattern pattern = Pattern.compile("https?:\\/\\/[-a-zA-Z0-9@:%._\\+~/?&;#=]+.jpe?g[-a-zA-Z0-9@:%._\\+~/?&;#=]+");
                                     Matcher matcher = pattern.matcher(response_str);
+                                    progressHide();
                                     if (matcher.find()) {
                                         String pp_url = matcher.group();
                                         downloadImage(pp_url,followers.get(finalPositionInt).getUsername(),"0");
@@ -227,11 +255,14 @@ public class CustomListView extends ArrayAdapter<String> {
                     downloadButton.setOnClickListener(new View.OnClickListener() {
                         @Override
                         public void onClick(View view) {
-                            Util.checkPermission(context);
                             if (ContextCompat.checkSelfPermission(context,
                                     Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                                 downloadImage(images.get(rg.getCheckedRadioButtonId()).getUrl(), username,
                                                         images.get(rg.getCheckedRadioButtonId()).getDimensions());
+                                dialog.dismiss();
+                            }
+                            else{
+                                Util.checkPermission(context);
                             }
 
                         }
@@ -347,6 +378,26 @@ public class CustomListView extends ArrayAdapter<String> {
         }
     }
 
+    public void progressShow(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.VISIBLE);
+                context.getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
+
+    public void progressHide(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
+                context.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
 
 
 }

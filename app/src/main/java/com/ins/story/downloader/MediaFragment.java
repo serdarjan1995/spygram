@@ -21,6 +21,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -29,6 +30,7 @@ import android.widget.RadioGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.VideoView;
+import android.widget.ViewAnimator;
 
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
@@ -57,6 +59,8 @@ import okhttp3.ResponseBody;
 
 public class MediaFragment extends Fragment {
 
+    private Handler handler;
+    private ViewAnimator progressView;
     public static MediaFragment newInstance(StoryEntity storyEntity) {
         MediaFragment f = new MediaFragment();
         Bundle args = new Bundle();
@@ -73,6 +77,9 @@ public class MediaFragment extends Fragment {
         if (getArguments() == null){
             return v;
         }
+        handler = new Handler(Looper.getMainLooper());
+        progressView = v.findViewById(R.id.progress_view_story_fragment);
+        progressShow(0);
         final StoryEntity storyEntity = getArguments().getParcelable("story");
         assert storyEntity != null;
         String mediaUrl = storyEntity.getDefaultMediaUrl();
@@ -109,7 +116,18 @@ public class MediaFragment extends Fragment {
             ImageView playButton = v.findViewById(R.id.story_video_play_pause);
             playButton.setVisibility(View.INVISIBLE);
             imageView.setScaleType(ImageView.ScaleType.CENTER_CROP);
-            Picasso.get().load(mediaUrl).into(imageView);
+            Picasso.get().load(mediaUrl).into(imageView, new com.squareup.picasso.Callback() {
+                @Override
+                public void onSuccess() {
+                    progressHide(0);
+                }
+
+                @Override
+                public void onError(Exception e) {
+                    backgroundThreadShortToast(getString(R.string.net_err),v.getContext());
+                    progressHide(0);
+                }
+            });
         }
         else{
             imageView.setVisibility(View.INVISIBLE);
@@ -132,6 +150,7 @@ public class MediaFragment extends Fragment {
                         }
                     });
                     playButton.setVisibility(View.VISIBLE);
+                    progressHide(0);
                 }
             });
 
@@ -159,9 +178,10 @@ public class MediaFragment extends Fragment {
     public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities,
                                        final String username, final Context context) {
         if (context != null && mediaDownloadEntities != null) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
+            handler.post(new Runnable() {
                 @Override
                 public void run() {
+                    progressShow(0);
                     final Dialog dialog = new Dialog(context);
                     dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
                     dialog.setContentView(R.layout.radiobutton_dialog);
@@ -174,6 +194,7 @@ public class MediaFragment extends Fragment {
                             if (ContextCompat.checkSelfPermission(context,
                                     Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                                 downloadMedia(mediaDownloadEntities.get(rg.getCheckedRadioButtonId()),username,context);
+                                dialog.dismiss();
                             }
 
                         }
@@ -192,14 +213,19 @@ public class MediaFragment extends Fragment {
                         rg.addView(rb);
                     }
                     rg.check(0);
+                    progressHide(0);
                     dialog.show();
 
                 }
             });
         }
+        else{
+            backgroundThreadShortToast(getString(R.string.gen_error),context);
+        }
     }
 
     public void downloadMedia(final MediaDownloadEntity media, final String username, final Context context){
+        progressShow(1);
         OkHttpClient client = new OkHttpClient.Builder().build();
         final Request request = new Request.Builder()
                 .url(media.getUrl())
@@ -210,6 +236,7 @@ public class MediaFragment extends Fragment {
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(context.getString(R.string.net_err),context);
+                progressHide(1);
             }
 
             @Override
@@ -226,6 +253,7 @@ public class MediaFragment extends Fragment {
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
                                     Util.checkPermission(getActivity());
+                                    progressHide(1);
                                     return;
                                 }
                             }
@@ -249,6 +277,7 @@ public class MediaFragment extends Fragment {
                             }
                             catch (IOException e){
                                 Util.checkPermission(getActivity());
+                                progressHide(1);
                                 return;
                             }
 
@@ -259,6 +288,7 @@ public class MediaFragment extends Fragment {
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
                                     Util.checkPermission(getActivity());
+                                    progressHide(1);
                                     return;
                                 }
                             }
@@ -290,10 +320,11 @@ public class MediaFragment extends Fragment {
                             }
                             catch (IOException e){
                                 Util.checkPermission(getActivity());
+                                progressHide(1);
                                 return;
                             }
                         }
-
+                        progressHide(1);
                         NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                         if (uri != null && nm != null){
                             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -334,7 +365,7 @@ public class MediaFragment extends Fragment {
 
     public void backgroundThreadShortToast(final String msg, final Context context) {
         if (context != null && msg != null) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
+            handler.post(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
@@ -343,6 +374,41 @@ public class MediaFragment extends Fragment {
         }
     }
 
+    public void progressShow(int freezeUI){
+        if (freezeUI==1){
+            this.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    getActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                }
+            });
+        }
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.VISIBLE);
+            }
+        });
+    }
+
+    public void progressHide(int freezeUI){
+        if (freezeUI==1 && getActivity()!= null){
+            this.getActivity().runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                }
+            });
+
+        }
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
+            }
+        });
+    }
 
 
 

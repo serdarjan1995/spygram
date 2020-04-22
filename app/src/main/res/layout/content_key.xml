@@ -8,16 +8,23 @@
     tools:context=".MainActivity"
     >
 
-    <EditText
-        android:id="@+id/setkeyphrasetext"
-        android:layout_width="wrap_content"
+
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="230dp"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="30dp"
-        android:layout_marginBottom="10dp"
-        android:ems="10"
-        android:hint="@string/keyphrase"
-        android:inputType="textPassword" />
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp">
+        <EditText
+            android:id="@+id/setkeyphrasetext"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal"
+            android:ems="10"
+            android:hint="@string/keyphrase"
+            android:inputType="textPassword" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/buttonsetkeyphrase"

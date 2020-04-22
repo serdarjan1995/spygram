@@ -15,6 +15,10 @@ public class ViewFragment extends Fragment {
         this.layout = layout;
     }
 
+    public ViewFragment() {
+        // empty constructor
+    }
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 

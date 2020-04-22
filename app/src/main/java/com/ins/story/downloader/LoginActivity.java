@@ -10,11 +10,13 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ProgressBar;
 import android.widget.Toast;
-
-import com.ins.story.downloader.Util;
+import android.widget.ViewAnimator;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -39,14 +41,20 @@ public class LoginActivity extends AppCompatActivity {
     private String password;
     private String androidId;
     private String challenge_api_path;
+    private Button loginButton;
+    private ViewAnimator progressview;
+    private Handler handler;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
-        Button loginButton = findViewById(R.id.login_button);
+        loginButton = findViewById(R.id.login_button);
         usernameEditText = findViewById(R.id.login_username);
         passwordEditText = findViewById(R.id.login_password);
+        progressview = findViewById(R.id.progress_view_login);
+        progressview.setVisibility(ViewAnimator.INVISIBLE);
+        handler = new Handler(LoginActivity.this.getMainLooper());
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -80,7 +88,7 @@ public class LoginActivity extends AppCompatActivity {
         try {
             client = Util.getHttpClient();
             requestBody = Util.getRequestBody(json);
-
+            progressShow();
         }
         catch (Exception e){
             backgroundThreadShortToast(getString(R.string.net_err));
@@ -96,6 +104,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
 
             @Override
@@ -176,6 +185,7 @@ public class LoginActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
+                progressHide();
             }
         });
     }
@@ -185,7 +195,7 @@ public class LoginActivity extends AppCompatActivity {
         OkHttpClient client;
         try {
             client = Util.getHttpClient();
-
+            progressShow();
         }
         catch (Exception e){
             backgroundThreadShortToast(getString(R.string.net_err));
@@ -196,7 +206,6 @@ public class LoginActivity extends AppCompatActivity {
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
-
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
@@ -229,12 +238,14 @@ public class LoginActivity extends AppCompatActivity {
                 else{
                     backgroundThreadShortToast(getString(R.string.fail_login) + " 3");
                 }
+                progressHide();
             }
 
             @Override
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
         });
     }
@@ -286,6 +297,29 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    public void progressShow(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                loginButton.setEnabled(false);
+                progressview.setVisibility(ViewAnimator.VISIBLE);
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
+
+    public void progressHide(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                loginButton.setEnabled(true);
+                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
     }
 
     public void onBackPressed() {

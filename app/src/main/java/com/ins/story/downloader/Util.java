@@ -120,9 +120,9 @@ public class Util {
     public static OkHttpClient getHttpClient(){
         String hostname = "i.instagram.com";
         CertificatePinner certificatePinner = new CertificatePinner.Builder()
-                .add(hostname, "sha256/mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=")
-                .add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
-                .add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
+                //.add(hostname, "sha256/mreKTxeq4bRmIPe8oiojs3P40B5t0z49e9E7lA7besM=")
+                //.add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
+                //.add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
                 .build();
         OkHttpClient client = new OkHttpClient.Builder()
                 .certificatePinner(certificatePinner)
@@ -194,7 +194,6 @@ public class Util {
     }
 
     public static void checkPermission(Activity context) {
-
         if (ContextCompat.checkSelfPermission(context,
                 Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(context,

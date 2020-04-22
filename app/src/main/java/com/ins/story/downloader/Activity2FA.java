@@ -12,10 +12,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
+
+import com.google.android.material.button.MaterialButtonToggleGroup;
 
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
@@ -32,12 +37,18 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class Activity2FA extends AppCompatActivity {
+    private Handler handler;
+    private Button send2FaButton;
+    private ViewAnimator progressview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_2fa);
         Bundle b = getIntent().getExtras();
+        handler = new Handler(Activity2FA.this.getMainLooper());
+        progressview = findViewById(R.id.progress_view_2fa);
+        progressview.setVisibility(ViewAnimator.INVISIBLE);
         if (b != null) {
             String phone_number = b.getString("phone_number");
             if (!phone_number.equals("")) {
@@ -48,7 +59,7 @@ public class Activity2FA extends AppCompatActivity {
             final String username = b.getString("username");
             if (!identifier.equals("")) {
                 final EditText code_2faEditText = findViewById(R.id.editText_2fa);
-                Button send2FaButton = findViewById(R.id.button2FaSendCode);
+                send2FaButton = findViewById(R.id.button2FaSendCode);
                 send2FaButton.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -66,6 +77,7 @@ public class Activity2FA extends AppCompatActivity {
                                 json.put("two_factor_identifier",identifier);
                                 json.put("device_id",androidId);
                                 json.put("verification_code",code2fa);
+                                progressShow();
                             } catch (JSONException e) {
                                 e.printStackTrace();
                             }
@@ -80,6 +92,7 @@ public class Activity2FA extends AppCompatActivity {
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
                                     e.printStackTrace();
                                     backgroundThreadShortToast(getString(R.string.net_err));
+                                    progressHide();
                                 }
 
                                 @Override
@@ -92,6 +105,7 @@ public class Activity2FA extends AppCompatActivity {
                                                 resultIntent.putExtra("sessionid", r_response.getString("sessionid"));
                                                 resultIntent.putExtra("userid", r_response.getString("userid"));
                                                 setResult(Activity.RESULT_OK, resultIntent);
+                                                progressHide();
                                                 finish();
                                             }
                                             else{
@@ -121,7 +135,7 @@ public class Activity2FA extends AppCompatActivity {
                                             e.printStackTrace();
                                         }
                                     }
-
+                                    progressHide();
                                 }
                             });
                         }
@@ -161,6 +175,29 @@ public class Activity2FA extends AppCompatActivity {
                 .setNegativeButton(getString(R.string.no), null)
                 .show();
 
+    }
+
+    public void progressShow(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                send2FaButton.setEnabled(false);
+                progressview.setVisibility(ViewAnimator.VISIBLE);
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
+
+    public void progressHide(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                send2FaButton.setEnabled(true);
+                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
     }
 
     public void toastMsg(String message){

@@ -18,6 +18,7 @@
     <string name="set_keyphrase">Anahtar kelimeyi gir</string>
     <string name="encryption_text">Mevcut oturumunuz yerel saklama alanında kaydedilecektir. \nGüvenliğiniz nedeniyle oturumunuzu şifrelemelisiniz.\nLütfen anahtar kelime belirleyiniz, girmiş olduğunuz anahtar kelime her uygulama açıldığında istenecektir</string>
     <string name="_2fa_auth_code">2 aşamalı doğrulama kodu</string>
+    <string name="verification_code">Doğrulama kodu</string>
     <string name="text_2fa">Hesabınız 2 aşamalı doğrulama ile korunmuştur.\nBirazdan kayıtlı numaranıza gelecek olan doğrulama kodu giriniz</string>
     <string name="logout_str">Çıkış yap | Oturumu kapat</string>
     <string name="ad_attribution">Reklam</string>

@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/background_gredient"
-    android:orientation="vertical"
     >
-
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        >
 
     <TextView
         android:id="@+id/textView2Fa"
@@ -30,27 +32,50 @@
         android:textSize="18sp"
         android:textStyle="bold|italic" />
 
-    <EditText
-        android:id="@+id/editText_challenge"
+
+
+    <com.google.android.material.textfield.TextInputLayout
         android:layout_width="230dp"
-        android:layout_height="45dp"
-        android:background="#33FFFFFF"
-        android:layout_marginTop="5dp"
-        android:ems="10"
+        android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:inputType="textPersonName"
-        android:importantForAutofill="no" />
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="8dp">
+        <EditText
+            android:id="@+id/editText_challenge"
+            android:layout_width="230dp"
+            android:layout_height="45dp"
+            android:layout_marginTop="5dp"
+            android:ems="10"
+            android:layout_gravity="center_horizontal"
+            android:inputType="text"
+            android:hint="@string/verification_code"
+            android:importantForAutofill="no" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <Button
         android:id="@+id/buttonChallengeCode"
-        style="@style/Widget.AppCompat.Button.Borderless.Colored"
         android:layout_width="230dp"
         android:layout_marginTop="8dp"
         android:layout_height="45dp"
         android:layout_marginBottom="334dp"
         android:layout_gravity="center_horizontal"
-        android:background="#80FFFFFF"
         android:text="@string/menu_send" />
+    </LinearLayout>
 
+    <ViewAnimator
+        android:id="@+id/progress_view_challenge"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="invisible"
+        android:background="@color/black_300">
+        <ProgressBar
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="15dp"
+            android:indeterminate="true"
+            android:theme="@style/AppTheme.Dark.Dialog"
+            />
+    </ViewAnimator>
 
-</LinearLayout>
+</FrameLayout>

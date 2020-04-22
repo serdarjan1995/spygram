@@ -18,6 +18,7 @@
     <string name="set_keyphrase">Введит ключевую фразу</string>
     <string name="encryption_text">Ваша сессия будет храниться локально и должна быть зашифрована.\nПожалуйста, установите ключевую фразу, которая будет запрашиваться при открытии приложения</string>
     <string name="_2fa_auth_code">2-х факторный код</string>
+    <string name="verification_code">Проверочный код</string>
     <string name="text_2fa">Похоже, ваш аккаунт защищен двухфакторной аутентификацией.\nПожалуйста, введите проверочный код, который вы должны получить в течение нескольких минут</string>
     <string name="logout_str">Выйти | Очистить сессию</string>
     <string name="ad_attribution">Реклама</string>

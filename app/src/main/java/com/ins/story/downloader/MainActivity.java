@@ -66,6 +66,7 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.fragment.app.FragmentManager;
 import android.view.Menu;
 import android.view.Window;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
@@ -79,6 +80,8 @@ import android.widget.RadioGroup;
 import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewAnimator;
+
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -121,6 +124,8 @@ public class MainActivity extends AppCompatActivity
     private UnifiedNativeAd nativeAd;
     private UnifiedNativeAd nativeAd2;
     private boolean loggedOut = false;
+    private Handler handler;
+    private ViewAnimator progressView;
     private FirebaseRemoteConfig firebaseRemoteConfig;
     final String VERSION_CODE_KEY = "version_code";
     final String UPDATE_URL = "update_url";
@@ -138,6 +143,8 @@ public class MainActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
+        handler = new Handler(this.getMainLooper());
+        progressView = findViewById(R.id.progress_main);
 
         NotificationManager nm =(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -203,7 +210,7 @@ public class MainActivity extends AppCompatActivity
         getSharedPreferencesValues();
         loadNativeAd();
         loadBanner();
-        Util.checkPermission(this);
+        //Util.checkPermission(this);
     }
 
     private void checkForUpdate() {
@@ -582,8 +589,10 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void onClickKeypassBtn(View v){
+        progressShow();
         EditText text = findViewById(R.id.setkeyphrasetext);
         int status = decryptArguments(text.getText().toString());
+        progressHide();
         if (status == 0){
             InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
             if (imm != null){
@@ -592,7 +601,13 @@ public class MainActivity extends AppCompatActivity
             v.clearFocus();
             fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
                     .commitAllowingStateLoss();
-            getStoryReels();
+
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    getStoryReels();
+                }
+            }).start();
             NavigationView navigationView = findViewById(R.id.nav_view);
             navigationView.getMenu().getItem(1).setChecked(true);
 
@@ -600,6 +615,12 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void onClickDownloadByLink(View v){
+        Util.checkPermission(this);
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED){
+            return;
+        }
+        progressShow();
         ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null && clipboard.getPrimaryClipDescription() != null
                 && clipboard.getPrimaryClipDescription().hasMimeType(MIMETYPE_TEXT_PLAIN)) {
@@ -617,6 +638,7 @@ public class MainActivity extends AppCompatActivity
                         @Override
                         public void onFailure(@NotNull Call call, @NotNull IOException e) {
                             backgroundThreadShortToast(getString(R.string.net_err));
+                            progressHide();
                         }
 
                         @Override
@@ -626,8 +648,8 @@ public class MainActivity extends AppCompatActivity
                                 if (responseBody != null){
                                     ArrayList<MediaDownloadEntity> mediaDownloadEntities =
                                             Util.parseDownloadLinkResponse(responseBody.string());
+                                    progressHide();
                                     backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
-
                                 }
                             }
                         }
@@ -657,6 +679,7 @@ public class MainActivity extends AppCompatActivity
                             }
                             catch (Exception e){
                                 backgroundThreadShortToast(getString(R.string.net_err));
+                                progressHide();
                                 return;
                             }
                             final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
@@ -668,6 +691,7 @@ public class MainActivity extends AppCompatActivity
                                 @Override
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
                                     backgroundThreadShortToast(getString(R.string.net_err));
+                                    progressHide();
                                 }
 
                                 @Override
@@ -677,6 +701,7 @@ public class MainActivity extends AppCompatActivity
                                         if (responseBody != null){
                                             ArrayList<MediaDownloadEntity> mediaDownloadEntities =
                                                     Util.getHighlightMediaEntities(responseBody.string(),highlight_id,media_id);
+                                            progressHide();
                                             if (mediaDownloadEntities.size()>0){
                                                 backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
                                             }
@@ -711,6 +736,7 @@ public class MainActivity extends AppCompatActivity
                                 @Override
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
                                     backgroundThreadShortToast(getString(R.string.net_err));
+                                    progressHide();
                                 }
 
                                 @Override
@@ -720,6 +746,7 @@ public class MainActivity extends AppCompatActivity
                                         if (responseBody != null){
                                             try {
                                                 JSONObject responseJson = new JSONObject(responseBody.string());
+                                                progressHide();
                                                 if (responseJson.has("user") &&
                                                         responseJson.getJSONObject("user").has("id")) {
                                                     String user_id = responseJson.getJSONObject("user").getString("id");
@@ -731,6 +758,7 @@ public class MainActivity extends AppCompatActivity
                                             }
                                             catch(Exception e){
                                                 e.printStackTrace();
+                                                progressHide();
                                                 backgroundThreadShortToast(getString(R.string.clipboard_not_valid));
                                             }
                                         }
@@ -753,6 +781,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         }
+        progressHide();
     }
 
     public void getStoryOfUserByStoryId(String user_id, final String story_id){
@@ -926,6 +955,7 @@ public class MainActivity extends AppCompatActivity
 
 
     public void downloadMedia(final MediaDownloadEntity media, final Activity context){
+        progressShow();
         OkHttpClient client = new OkHttpClient.Builder().build();
         final Request request = new Request.Builder()
                 .url(media.getUrl())
@@ -936,6 +966,7 @@ public class MainActivity extends AppCompatActivity
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(context.getString(R.string.net_err));
+                progressHide();
             }
 
             @Override
@@ -952,6 +983,7 @@ public class MainActivity extends AppCompatActivity
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
                                     Util.checkPermission(getParent());
+                                    progressHide();
                                     return;
                                 }
                             }
@@ -975,6 +1007,7 @@ public class MainActivity extends AppCompatActivity
                             }
                             catch (IOException e){
                                 Util.checkPermission(getParent());
+                                progressHide();
                                 return;
                             }
 
@@ -985,6 +1018,7 @@ public class MainActivity extends AppCompatActivity
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
                                     Util.checkPermission(getParent());
+                                    progressHide();
                                     return;
                                 }
                             }
@@ -1016,10 +1050,11 @@ public class MainActivity extends AppCompatActivity
                             }
                             catch (IOException e){
                                 Util.checkPermission(getParent());
+                                progressHide();
                                 return;
                             }
                         }
-
+                        progressHide();
                         NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                         if (uri != null && nm != null){
                             Intent intent = new Intent(Intent.ACTION_VIEW);
@@ -1083,6 +1118,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void getFollows(String id, int followType){
+        progressShow();
         OkHttpClient client = Util.getHttpClient();
         String url;
         if (followType == 1){
@@ -1103,6 +1139,7 @@ public class MainActivity extends AppCompatActivity
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 backgroundThreadShortToast(getString(R.string.net_err));
                 e.printStackTrace();
+                progressHide();
             }
 
             @Override
@@ -1115,6 +1152,7 @@ public class MainActivity extends AppCompatActivity
                     }
                     else{
                         backgroundThreadShortToast(getString(R.string.smth_wrong));
+                        progressHide();
                         return;
                     }
 
@@ -1124,7 +1162,6 @@ public class MainActivity extends AppCompatActivity
                             JSONObject json_followers;
                             try {
                                 json_followers = new JSONObject(followers_response);
-
                                 JSONArray users  = json_followers.getJSONArray("users");
                                 String userId;
                                 String username;
@@ -1163,6 +1200,7 @@ public class MainActivity extends AppCompatActivity
                                 Log.e("ERROR",getString(R.string.gen_error));
                                 e.printStackTrace();
                             }
+                            progressHide();
                         }
                     });
 
@@ -1173,6 +1211,7 @@ public class MainActivity extends AppCompatActivity
 
 
     public void getStoryOfUser(String userId){
+        progressShow();
         OkHttpClient client = Util.getHttpClient();
         String url = Util.URL_HOST + Util.PATH_GET_STORY;
         url = String.format(url,userId);
@@ -1184,39 +1223,53 @@ public class MainActivity extends AppCompatActivity
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
                     ResponseBody responseBody = response.body();
-                    final String responseGetStory;
+                    String responseGetStory;
                     if (responseBody != null){
                         responseGetStory = responseBody.string();
                     }
                     else{
                         toastMsg(getString(R.string.smth_wrong));
+                        progressHide();
                         return;
                     }
-
                     JSONObject json;
+                    JSONArray items;
+                    String username = "";
+                    ArrayList<StoryEntity> storyEntities = new ArrayList<>();
                     try {
                         json = new JSONObject(responseGetStory);
                         if (json.has("reel") && json.isNull("reel")) {
                             backgroundThreadShortToast(getString(R.string.no_story));
+                            progressHide();
                             return;
+                        }
+                        items = json.getJSONObject("reel").getJSONArray("items");
+                        username = json.getJSONObject("reel").getJSONObject("user")
+                                .getString("username");
+
+                        for (int i = 0; i < items.length(); i++) {
+                            storyEntities.add(new StoryEntity(items.getJSONObject(i),username));
                         }
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
-
-
+                    final String usernameFinal = username;
+                    final ArrayList<StoryEntity> storyEntitiesFinal = storyEntities;
+                    progressHide();
                     MainActivity.this.runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             Intent intent = new Intent(MainActivity.this, StoryViewer.class);
                             Bundle b = new Bundle();
-                            b.putString("response", responseGetStory);
+                            b.putString("username", usernameFinal);
+                            b.putParcelableArrayList("storyEntities",storyEntitiesFinal);
                             intent.putExtras(b);
                             startActivity(intent);
                         }
@@ -1227,6 +1280,7 @@ public class MainActivity extends AppCompatActivity
     }
 
     public void getStoryReels(){
+        progressShow();
         final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
         String url = Util.URL_HOST + Util.PATH_REELS_TRAY;
         OkHttpClient client = Util.getHttpClient();
@@ -1240,16 +1294,17 @@ public class MainActivity extends AppCompatActivity
             public void onFailure(@NotNull Call call, @NotNull IOException e) {
                 e.printStackTrace();
                 backgroundThreadShortToast(getString(R.string.net_err));
+                progressHide();
             }
 
             @Override
             public void onResponse(@NotNull Call call, @NotNull Response response) {
                 if(response.isSuccessful()){
                     final ResponseBody responseBody = response.body();
-                    if (responseBody != null){
+                    if (responseBody != null){/*
                         MainActivity.this.runOnUiThread(new Runnable() {
                             @Override
-                            public void run() {
+                            public void run() {*/
                                 try {
                                     JSONObject responseJson = new JSONObject(responseBody.string());
                                     if (responseJson.has("status") &&
@@ -1271,24 +1326,31 @@ public class MainActivity extends AppCompatActivity
                                             userFollow = new UserFollow(userId, username, pp_url, full_name, 0);
                                             userFollowArrayList.add(userFollow);
                                         }
-                                        CustomListView customListview = new CustomListView(MainActivity.this,
-                                                userFollowArrayList, true);
-                                        ListView lst = findViewById(R.id.listview_followers);
-                                        lst.setAdapter(customListview);
-                                        lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                        handler.post(new Runnable() {
                                             @Override
-                                            public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                                getStoryOfUser(userFollowArrayList.get(i).getUserId());
+                                            public void run() {
+                                                CustomListView customListview = new CustomListView(MainActivity.this,
+                                                        userFollowArrayList, true);
+                                                ListView lst = findViewById(R.id.listview_followers);
+                                                lst.setAdapter(customListview);
+                                                lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                                                    @Override
+                                                    public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
+                                                        getStoryOfUser(userFollowArrayList.get(i).getUserId());
+                                                    }
+                                                });
                                             }
                                         });
+
 
                                     }
                                 } catch (Exception e) {
                                     e.printStackTrace();
+                                    backgroundThreadShortToast(getString(R.string.gen_error));
                                 }
-
-                            }
-                        });
+                                progressHide();
+                          /*  }
+                        });*/
                     }
                 }
             }
@@ -1347,7 +1409,7 @@ public class MainActivity extends AppCompatActivity
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
         if (context != null && msg != null) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
+            handler.post(new Runnable() {
                 @Override
                 public void run() {
                     Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
@@ -1391,6 +1453,27 @@ public class MainActivity extends AppCompatActivity
                         }
                     }
                 }
+            }
+        });
+    }
+
+    public void progressShow(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.VISIBLE);
+                getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                        WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+            }
+        });
+    }
+
+    public void progressHide(){
+        handler.post(new Runnable() {
+            @Override
+            public void run() {
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
+                getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
     }
