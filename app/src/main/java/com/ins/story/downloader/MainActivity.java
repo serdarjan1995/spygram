@@ -189,30 +189,37 @@ public class MainActivity extends AppCompatActivity
                 .unsubscribeWhenNotificationsAreDisabled(true)
                 .init();
 
-
+        // admob initialization
         MobileAds.initialize(this, new OnInitializationCompleteListener() {
             @Override
             public void onInitializationComplete(InitializationStatus initializationStatus) {
             }
         });
-
         FrameLayout adContainerView = findViewById(R.id.ad_view_container);
         bannerAdView = new AdView(this);
         bannerAdView.setAdUnitId(Util.BANNER_UNIT_ID);
         adContainerView.addView(bannerAdView);
 
+        //prepare UI
         keyFragment = new ViewFragment(R.layout.content_key);
         downloadByLinkFragment = new ViewFragment(R.layout.content_download_by_link);
         followersFragment = new ViewFragment(R.layout.content_followers);
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
         navigationView.getMenu().getItem(0).setChecked(true);
+
+        //check saved session
         getSharedPreferencesValues();
+
+        //load ads
         loadNativeAd();
         loadBanner();
-        //Util.checkPermission(this);
     }
 
+    /**
+     * checks current app version. if newer is available, forces to update
+     * redirects to google play
+    **/
     private void checkForUpdate() {
         int latestAppVersion = (int) firebaseRemoteConfig.getDouble(VERSION_CODE_KEY);
         final String update_url = firebaseRemoteConfig.getString(UPDATE_URL);
@@ -247,19 +254,21 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * Banner ads. Load and update
+     */
     private void loadBanner() {
-        AdRequest adRequest =
-                new AdRequest.Builder().build();
-
+        AdRequest adRequest = new AdRequest.Builder().build();
         AdSize adSize = getAdSize();
         if (bannerAdView.getAdSize() == null){
             bannerAdView.setAdSize(adSize);
         }
-
-
         bannerAdView.loadAd(adRequest);
     }
 
+    /**
+     * Check size for ads area  defined on UI.
+     */
     private AdSize getAdSize() {
         Display display = getWindowManager().getDefaultDisplay();
         DisplayMetrics outMetrics = new DisplayMetrics();
@@ -267,17 +276,17 @@ public class MainActivity extends AppCompatActivity
 
         float widthPixels = outMetrics.widthPixels;
         float density = outMetrics.density;
-
         int adWidth = (int) (widthPixels / density);
-
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
-
+    /**
+     * Native ads. Load and update
+     * There are 2 native add fields on UI.
+     * Check which one of them active then apply procedures
+     */
     private void loadNativeAd(){
         final NavigationView navigationView = findViewById(R.id.nav_view);
-
-
         AdLoader adLoader = new AdLoader.Builder(this, Util.NATIVE_AD_UNIT_ID)
                 .forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
                     @Override
@@ -295,7 +304,6 @@ public class MainActivity extends AppCompatActivity
                             frameLayout.removeAllViews();
                             frameLayout.addView(adView);
                         }
-
                     }
                 })
                 .build();
@@ -304,7 +312,11 @@ public class MainActivity extends AppCompatActivity
     }
 
 
-    private void populateUnifiedNativeAdView(UnifiedNativeAd nativeAd, UnifiedNativeAdView adView) {
+    /**
+     * Get advertisement and apply necessary field to UI
+     * For native ads!!!
+     */
+    private void populateUnifiedNativeAdView(UnifiedNativeAd nativeAd, UnifiedNativeAdView adView){
         // Set the media view.
         adView.setMediaView((MediaView) adView.findViewById(R.id.ad_media));
 
@@ -381,7 +393,7 @@ public class MainActivity extends AppCompatActivity
 
         // Get the video controller for the ad. One will always be provided, even if the ad doesn't
         // have a video asset.
-        VideoController vc = nativeAd.getVideoController();
+        VideoController vc = nativeAd.getMediaContent().getVideoController();
 
         // Updates the UI to say whether or not this ad has a video asset.
         if (vc.hasVideoContent()) {
@@ -401,10 +413,11 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-
+    /**
+     * Refresh advertisement. Get new one if applicable
+     */
     private void refreshAd(){
         AdLoader.Builder builder = new AdLoader.Builder(this, Util.NATIVE_AD_UNIT_ID);
-
         builder.forUnifiedNativeAd(new UnifiedNativeAd.OnUnifiedNativeAdLoadedListener() {
             // OnUnifiedNativeAdLoadedListener implementation.
             @Override
@@ -447,47 +460,60 @@ public class MainActivity extends AppCompatActivity
         AdLoader adLoader = builder.withAdListener(new AdListener() {
             @Override
             public void onAdFailedToLoad(int errorCode) {
+                //failed to load
+                // do nothing
             }
         }).build();
 
         adLoader.loadAd(new AdRequest.Builder().build());
     }
 
-
-    public void onRequestPermissionsResult(int requestCode,
-                                           String[] permissions, int[] grantResults) {
-        switch (requestCode) {
-            case 1: {
-                if (grantResults.length == 0
-                        || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
-                    backgroundThreadShortToast(getString(R.string.write_perm));
-                }
-                break;
+    /**
+     * Callback for WRITE_EXTERNAL_STORAGE
+     * If user doesn't allow, then notify about it.
+     */
+    public void onRequestPermissionsResult(int requestCode, @NotNull String[] permissions,
+                                           @NotNull int[] grantResults){
+        if (requestCode == 1) {
+            if (grantResults.length == 0
+                    || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                backgroundThreadShortToast(getString(R.string.write_perm));
             }
         }
     }
 
 
-
+    /**
+     * Android Back Button control
+     */
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
-        } else {
+        }
+        else{
             super.onBackPressed();
         }
     }
 
+    /**
+     * Options Menu Button on UI ( three dots )
+     * !!!! Not Used !!!!
+     */
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.download_pp_menu, menu);
+        //getMenuInflater().inflate(R.menu.SOMETHING, menu);
         return true;
     }
 
+    /**
+     * Callback for Options Menu Button on UI ( three dots )
+     * !!!! Not Used !!!!
+     */
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
+    public boolean onOptionsItemSelected(@NotNull MenuItem item) {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
@@ -501,6 +527,9 @@ public class MainActivity extends AppCompatActivity
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Navigation control
+     */
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
@@ -588,6 +617,11 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+    /**
+     * Check Keypass Button
+     * If password is right then we able to decrypt saved session
+     *    logic function @decryptArguments();
+     */
     public void onClickKeypassBtn(View v){
         progressShow();
         EditText text = findViewById(R.id.setkeyphrasetext);
@@ -610,10 +644,12 @@ public class MainActivity extends AppCompatActivity
             }).start();
             NavigationView navigationView = findViewById(R.id.nav_view);
             navigationView.getMenu().getItem(1).setChecked(true);
-
         }
     }
 
+    /**
+     * Download with Instagram post link
+     */
     public void onClickDownloadByLink(View v){
         Util.checkPermission(this);
         if (ContextCompat.checkSelfPermission(this,
@@ -627,6 +663,7 @@ public class MainActivity extends AppCompatActivity
             if( clipboard.getPrimaryClip() != null){
                 ClipData.Item item = clipboard.getPrimaryClip().getItemAt(0);
                 String pasteData = "" + item.getText();
+                //if this is Post or IGTV
                 if (pasteData.contains("instagram.com/p/") || pasteData.contains("instagram.com/tv/")){
                     String url = pasteData + "&__a=1";
                     OkHttpClient client = Util.getHttpClient();
@@ -655,6 +692,7 @@ public class MainActivity extends AppCompatActivity
                         }
                     });
                 }
+                // is this highlighted story?
                 else if (pasteData.contains("instagram.com/s/")){
                     Pattern pattern = Pattern.compile("/s/(.*?)[?]");
                     Matcher matcher = pattern.matcher(pasteData);
@@ -719,6 +757,7 @@ public class MainActivity extends AppCompatActivity
 
                     }
                 }
+                // is this current available active story?
                 else if (pasteData.contains("instagram.com/stories/")){
                     Pattern pattern = Pattern.compile("/[0-9]+");
                     Matcher matcher = pattern.matcher(pasteData);
@@ -784,6 +823,9 @@ public class MainActivity extends AppCompatActivity
         progressHide();
     }
 
+    /**
+     * Request user story by storyId
+     */
     public void getStoryOfUserByStoryId(String user_id, final String story_id){
         OkHttpClient client = Util.getHttpClient();
         String url = Util.URL_HOST + Util.PATH_GET_STORY;
@@ -871,6 +913,10 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    /**
+     * Dialog menu
+     * Used for available sizes for downloading media
+     */
     public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities, final Activity context) {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
@@ -888,7 +934,6 @@ public class MainActivity extends AppCompatActivity
                                 Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                             downloadMedia(mediaDownloadEntities.get(rg.getCheckedRadioButtonId()),context);
                         }
-
                     }
                 });
                 Random random = new Random();
@@ -907,19 +952,22 @@ public class MainActivity extends AppCompatActivity
                         rg.addView(vvv);
                         RadioButton rb = new RadioButton(context);
                         rb.setButtonDrawable(R.drawable.ic_panorama_black_24dp);
-                        rb.setButtonTintList(new ColorStateList(new int[][] {
-                                new int[] { android.R.attr.state_enabled}, // enabled
-                                new int[] {-android.R.attr.state_enabled}, // disabled
-                                new int[] {-android.R.attr.state_checked}, // unchecked
-                                new int[] { android.R.attr.state_pressed}  // pressed
-                        },
+                        rb.setButtonTintList(new ColorStateList(
+                                new int[][] {
+                                    new int[] { android.R.attr.state_enabled}, // enabled
+                                    new int[] {-android.R.attr.state_enabled}, // disabled
+                                    new int[] {-android.R.attr.state_checked}, // unchecked
+                                    new int[] { android.R.attr.state_pressed}  // pressed
+                                },
                                 new int[] {
-                                        Color.parseColor(colorCode),
-                                        Color.parseColor(colorCode),
-                                        Color.parseColor(colorCode),
-                                        Color.parseColor(colorCode)
-                        }));
-                        rb.setText("# "+ slideNumber++);
+                                    Color.parseColor(colorCode),
+                                    Color.parseColor(colorCode),
+                                    Color.parseColor(colorCode),
+                                    Color.parseColor(colorCode)
+                                }
+                        ));
+                        String text_for_display = "# "+ slideNumber++;
+                        rb.setText(text_for_display);
                         rb.setClickable(false);
                         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
                                 LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -947,13 +995,13 @@ public class MainActivity extends AppCompatActivity
                 }
                 rg.check(firstRadio);
                 dialog.show();
-
             }
         });
     }
 
-
-
+    /**
+     * Download media and save it to gallery
+     */
     public void downloadMedia(final MediaDownloadEntity media, final Activity context){
         progressShow();
         OkHttpClient client = new OkHttpClient.Builder().build();
@@ -1095,9 +1143,9 @@ public class MainActivity extends AppCompatActivity
 
     }
 
-
-
-
+    /**
+     * Handle result from LoginActivity
+     */
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == 0) {
@@ -1117,6 +1165,9 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * Get followers and list to UI
+     */
     public void getFollows(String id, int followType){
         progressShow();
         OkHttpClient client = Util.getHttpClient();
@@ -1209,7 +1260,9 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-
+    /**
+     * Get story by userId
+     */
     public void getStoryOfUser(String userId){
         progressShow();
         OkHttpClient client = Util.getHttpClient();
@@ -1279,6 +1332,9 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    /**
+     * Get all stories available and list them
+     */
     public void getStoryReels(){
         progressShow();
         final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
@@ -1357,7 +1413,10 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
-
+    /**
+     * Handle previous session or init new
+     * ! Starts LoginActivity
+     */
     public void getSharedPreferencesValues(){
         SharedPreferences sharedPreferences = this.getSharedPreferences(getApplicationContext()
                 .getPackageName(), Context.MODE_PRIVATE);
@@ -1374,7 +1433,6 @@ public class MainActivity extends AppCompatActivity
             catch (Exception e){
                 e.printStackTrace();
             }
-
         }
         else{
             Intent intent = new Intent(MainActivity.this, LoginActivity.class);
@@ -1382,6 +1440,11 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * Decryption of previous session
+     * For successful decryption user should enter his keyphrase
+     * Otherwise decryption is not available
+     */
     public int decryptArguments(String keyPhrase){
         String decryptedTest = Util.decrypt(checkDecryptionString,keyPhrase,initVector);
         if (decryptedTest == null){
@@ -1401,11 +1464,16 @@ public class MainActivity extends AppCompatActivity
         return -1;
     }
 
-
+    /**
+     * Toast message. Code friendly.
+     */
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
 
+    /**
+     * Toast message using handler
+     */
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
         if (context != null && msg != null) {
@@ -1418,6 +1486,10 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+    /**
+     * if keyphrase entered and decryption was successful then logout invalidating session
+     * otherwise just clear encrypted session data
+     */
     public void logout(){
         String urlLogout = Util.URL_HOST + Util.PATH_LOGOUT;
         OkHttpClient client = Util.getHttpClient();
@@ -1446,7 +1518,6 @@ public class MainActivity extends AppCompatActivity
                             if (responseJson.has("status") &&
                                     responseJson.getString("status").equals("ok")){
                                 loggedOut = true;
-
                             }
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -1457,6 +1528,9 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    /**
+     * Progress start
+     */
     public void progressShow(){
         handler.post(new Runnable() {
             @Override
@@ -1468,6 +1542,9 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+    /**
+     * Progress stop
+     */
     public void progressHide(){
         handler.post(new Runnable() {
             @Override

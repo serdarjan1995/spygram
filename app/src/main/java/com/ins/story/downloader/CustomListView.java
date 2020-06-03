@@ -78,7 +78,7 @@ public class CustomListView extends ArrayAdapter<String> {
     }
 
     @Override
-    public View getView(int position, View convertView, final ViewGroup parent) {
+    public View getView(int position, View convertView, @NotNull final ViewGroup parent) {
         View r = convertView;
         final ViewHolder viewHolder;
         final int finalPositionInt = position;
@@ -208,8 +208,13 @@ public class CustomListView extends ArrayAdapter<String> {
 
                                 @Override
                                 public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                                    String response_str = response.body().string();
-                                    Pattern pattern = Pattern.compile("https?:\\/\\/[-a-zA-Z0-9@:%._\\+~/?&;#=]+.jpe?g[-a-zA-Z0-9@:%._\\+~/?&;#=]+");
+                                    ResponseBody responseBody = response.body();
+                                    if (responseBody == null){
+                                        backgroundThreadShortToast(context.getString(R.string.net_err));
+                                        return;
+                                    }
+                                    String response_str = responseBody.string();
+                                    Pattern pattern = Pattern.compile("https?:\\/\\/[-a-zA-Z0-9@:%._+~/?&;#=]+.jpe?g[-a-zA-Z0-9@:%._+~/?&;#=]+");
                                     Matcher matcher = pattern.matcher(response_str);
                                     progressHide();
                                     if (matcher.find()) {
@@ -329,8 +334,6 @@ public class CustomListView extends ArrayAdapter<String> {
                             return;
                         }
 
-
-
                         NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                         if (nm!=null){
                             Uri uri = FileProvider.getUriForFile(context,
@@ -352,16 +355,14 @@ public class CustomListView extends ArrayAdapter<String> {
                             mBuilder.setContentText( String.format(context.getString(R.string.pp_downloaded),username,dim) );
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }
-
                     }
-
                 }
             }
         });
 
     }
 
-    class ViewHolder
+    static class ViewHolder
     {
         TextView name_text;
         TextView username_text;
@@ -398,6 +399,5 @@ public class CustomListView extends ArrayAdapter<String> {
             }
         });
     }
-
 
 }

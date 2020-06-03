@@ -1,7 +1,6 @@
 package com.ins.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -15,19 +14,13 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
-
-import com.google.android.material.button.MaterialButtonToggleGroup;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -51,13 +44,13 @@ public class Activity2FA extends AppCompatActivity {
         progressview.setVisibility(ViewAnimator.INVISIBLE);
         if (b != null) {
             String phone_number = b.getString("phone_number");
-            if (!phone_number.equals("")) {
+            if (phone_number != null && !phone_number.equals("")) {
                 TextView phoneNumberTextView = findViewById(R.id.textView2fa_phonenumber);
                 phoneNumberTextView.setText(String.format(getString(R.string.phone_number), phone_number));
             }
             final String identifier = b.getString("identifier");
             final String username = b.getString("username");
-            if (!identifier.equals("")) {
+            if (identifier != null && !identifier.equals("")) {
                 final EditText code_2faEditText = findViewById(R.id.editText_2fa);
                 send2FaButton = findViewById(R.id.button2FaSendCode);
                 send2FaButton.setOnClickListener(new View.OnClickListener() {
@@ -145,10 +138,7 @@ public class Activity2FA extends AppCompatActivity {
             else{
                 toastMsg(getString(R.string.smth_wrong) + " Error code: 114");
             }
-
         }
-
-
     }
 
     public void backgroundThreadShortToast(final String msg) {
@@ -174,7 +164,6 @@ public class Activity2FA extends AppCompatActivity {
                 })
                 .setNegativeButton(getString(R.string.no), null)
                 .show();
-
     }
 
     public void progressShow(){

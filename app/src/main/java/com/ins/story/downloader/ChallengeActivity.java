@@ -12,19 +12,14 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewAnimator;
-
 import androidx.appcompat.app.AppCompatActivity;
-
 import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.io.IOException;
-
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -37,19 +32,18 @@ public class ChallengeActivity extends AppCompatActivity {
     private String challenge_path;
     private String mid;
     private String androidId;
-    private TextView phoneNumberTextView;
     private EditText codeChallengeEditText;
     private Button sendChallengeButton;
     private Handler handler;
-    private ViewAnimator progressview;
+    private ViewAnimator progressView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.layout_challenge);
         handler = new Handler(ChallengeActivity.this.getMainLooper());
-        progressview = findViewById(R.id.progress_view_challenge);
-        progressview.setVisibility(ViewAnimator.INVISIBLE);
+        progressView = findViewById(R.id.progress_view_challenge);
+        progressView.setVisibility(ViewAnimator.INVISIBLE);
         codeChallengeEditText = findViewById(R.id.editText_challenge);
         sendChallengeButton = findViewById(R.id.buttonChallengeCode);
         sendChallengeButton.setOnClickListener(new View.OnClickListener() {
@@ -67,15 +61,15 @@ public class ChallengeActivity extends AppCompatActivity {
         Bundle b = getIntent().getExtras();
         if (b != null) {
             String phone_number = b.getString("phone_number");
-            if (!phone_number.equals("")) {
-                phoneNumberTextView = findViewById(R.id.textViewchallenge_phonenumber);
+            if (phone_number != null && !phone_number.equals("")) {
+                TextView phoneNumberTextView = findViewById(R.id.textViewchallenge_phonenumber);
                 phoneNumberTextView.setText(phone_number);
             }
             androidId = b.getString("androidId");
             challenge_path = b.getString("challenge_api_path");
             mid = b.getString("mid");
             String step_name = b.getString("step_name");
-            if (step_name.equals("select_verify_method")){
+            if (step_name != null && step_name.equals("select_verify_method")){
                 JSONObject json = new JSONObject();
                 try {
                     json.put("choice","0");
@@ -85,7 +79,7 @@ public class ChallengeActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-            else if (step_name.equals("verify_code")) {
+            else if (step_name != null && step_name.equals("verify_code")) {
                 toastMsg(getString(R.string.enter_ver_code));
             }
             else{
@@ -116,21 +110,26 @@ public class ChallengeActivity extends AppCompatActivity {
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
                     ResponseBody responseBody = response.body();
-                    try {
-                        JSONObject r_response = new JSONObject(responseBody.string());
-                        if (r_response.has("status") &&
-                                r_response.getString("status").equals("ok") &&
-                                r_response.has("step_data") && r_response.has("step_name") &&
-                                r_response.getString("step_name").equals("verify_code")){
-                            //Done
+                    if (responseBody != null){
+                        try {
+                            JSONObject r_response = new JSONObject(responseBody.string());
+                            if (r_response.has("status") &&
+                                    r_response.getString("status").equals("ok") &&
+                                    r_response.has("step_data") && r_response.has("step_name") &&
+                                    r_response.getString("step_name").equals("verify_code")){
+                                backgroundThreadShortToast(getString(R.string.all_right));
+                            }
+                            else{
+                                backgroundThreadShortToast(getString(R.string.fail_login) + " 2");
+                            }
                         }
-                        else{
-                            backgroundThreadShortToast(getString(R.string.fail_login) + " 2");
+                        catch(JSONException e){
+                            e.printStackTrace();
+                            backgroundThreadShortToast(getString(R.string.fail_login) + " 3");
                         }
                     }
-                    catch(JSONException e){
-                        e.printStackTrace();
-                        backgroundThreadShortToast(getString(R.string.fail_login) + " 3");
+                    else{
+                        backgroundThreadShortToast(getString(R.string.fail_login) + " 4");
                     }
                 }
                 else{
@@ -181,24 +180,29 @@ public class ChallengeActivity extends AppCompatActivity {
             public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
                 if(response.isSuccessful()){
                     ResponseBody responseBody = response.body();
-                    try {
-                        JSONObject r_response = new JSONObject(responseBody.string());
-                        if (r_response.has("status") &&
-                                r_response.getString("status").equals("ok") &&
-                                r_response.has("action") &&
-                                r_response.getString("action").equals("close")){
-                            Intent resultIntent = new Intent();
-                            setResult(Activity.RESULT_OK, resultIntent);
-                            progressHide();
-                            finish();
+                    if (responseBody != null){
+                        try {
+                            JSONObject r_response = new JSONObject(responseBody.string());
+                            if (r_response.has("status") &&
+                                    r_response.getString("status").equals("ok") &&
+                                    r_response.has("action") &&
+                                    r_response.getString("action").equals("close")){
+                                Intent resultIntent = new Intent();
+                                setResult(Activity.RESULT_OK, resultIntent);
+                                progressHide();
+                                finish();
+                            }
+                            else{
+                                backgroundThreadShortToast(getString(R.string.fail_login) + " 5");
+                            }
                         }
-                        else{
-                            backgroundThreadShortToast(getString(R.string.fail_login) + " 5");
+                        catch(JSONException e){
+                            e.printStackTrace();
+                            backgroundThreadShortToast(getString(R.string.fail_login) + " 6");
                         }
                     }
-                    catch(JSONException e){
-                        e.printStackTrace();
-                        backgroundThreadShortToast(getString(R.string.fail_login) + " 6");
+                    else{
+                        backgroundThreadShortToast(getString(R.string.net_err));
                     }
                 }
                 else{
@@ -239,7 +243,6 @@ public class ChallengeActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(getString(R.string.no), null)
                 .show();
-
     }
 
     public void toastMsg(String message){
@@ -251,7 +254,7 @@ public class ChallengeActivity extends AppCompatActivity {
             @Override
             public void run() {
                 sendChallengeButton.setEnabled(true);
-                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
@@ -262,7 +265,7 @@ public class ChallengeActivity extends AppCompatActivity {
             @Override
             public void run() {
                 sendChallengeButton.setEnabled(false);
-                progressview.setVisibility(ViewAnimator.VISIBLE);
+                progressView.setVisibility(ViewAnimator.VISIBLE);
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }

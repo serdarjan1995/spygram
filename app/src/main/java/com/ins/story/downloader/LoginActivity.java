@@ -155,7 +155,7 @@ public class LoginActivity extends AppCompatActivity {
                             else if (responseJson.has("status") && responseJson.get("status").equals("fail") &&
                                     responseJson.has("message") &&
                                     responseJson.get("message").equals("challenge_required") ){
-                                //TODO
+                                //TODO : rare case not sure how to fix it
                                 challenge_api_path = responseJson.getJSONObject("challenge").getString("api_path");
                                 String mid = "";
                                 if (!response.headers("Set-Cookie").isEmpty()) {
