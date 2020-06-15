@@ -117,18 +117,22 @@ public class MainActivity extends AppCompatActivity
     private ViewFragment keyFragment;
     private ViewFragment downloadByLinkFragment;
     private ViewFragment followersFragment;
+    private ViewFragment searchUserFragment;
     private String checkDecryptionString;
     private String checkDecryptionSuccess;
     private String initVector;
     private AdView bannerAdView;
     private UnifiedNativeAd nativeAd;
-    private UnifiedNativeAd nativeAd2;
+    private UnifiedNativeAd nativeAd_downloadbylink;
+    private UnifiedNativeAd nativeAd_usersearch;
     private boolean loggedOut = false;
     private Handler handler;
     private ViewAnimator progressView;
     private FirebaseRemoteConfig firebaseRemoteConfig;
     final String VERSION_CODE_KEY = "version_code";
     final String UPDATE_URL = "update_url";
+    private boolean publicProfile = true;
+    private boolean hasPrevSession = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -204,6 +208,7 @@ public class MainActivity extends AppCompatActivity
         keyFragment = new ViewFragment(R.layout.content_key);
         downloadByLinkFragment = new ViewFragment(R.layout.content_download_by_link);
         followersFragment = new ViewFragment(R.layout.content_followers);
+        searchUserFragment = new ViewFragment(R.layout.content_user_search);
         fragmentManager = getSupportFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
         navigationView.getMenu().getItem(0).setChecked(true);
@@ -282,7 +287,7 @@ public class MainActivity extends AppCompatActivity
 
     /**
      * Native ads. Load and update
-     * There are 2 native add fields on UI.
+     * There are 3 native add fields on UI.
      * Check which one of them active then apply procedures
      */
     private void loadNativeAd(){
@@ -294,8 +299,10 @@ public class MainActivity extends AppCompatActivity
                         FrameLayout frameLayout;
                         if (navigationView.getMenu().getItem(0).isChecked()){
                             frameLayout = findViewById(R.id.nativeadframe);
+                        }else if (navigationView.getMenu().getItem(5).isChecked()){
+                            frameLayout = findViewById(R.id.nativeadframe_searchuser);
                         }else {
-                            frameLayout = findViewById(R.id.nativeadframe2);
+                            frameLayout = findViewById(R.id.nativeadframe_downloadbylink);
                         }
                         if (frameLayout != null){
                             UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
@@ -425,8 +432,11 @@ public class MainActivity extends AppCompatActivity
                 if (nativeAd != null) {
                     nativeAd.destroy();
                 }
-                if (nativeAd2 != null) {
-                    nativeAd2.destroy();
+                if (nativeAd_downloadbylink != null) {
+                    nativeAd_downloadbylink.destroy();
+                }
+                if (nativeAd_usersearch != null) {
+                    nativeAd_usersearch.destroy();
                 }
 
                 NavigationView navigationView = findViewById(R.id.nav_view);
@@ -434,9 +444,12 @@ public class MainActivity extends AppCompatActivity
                 if (navigationView.getMenu().getItem(0).isChecked()){
                     frameLayout = findViewById(R.id.nativeadframe);
                     nativeAd = unifiedNativeAd;
+                }else if (navigationView.getMenu().getItem(5).isChecked()){
+                    frameLayout = findViewById(R.id.nativeadframe_searchuser);
+                    nativeAd_usersearch = unifiedNativeAd;
                 }else {
-                    frameLayout = findViewById(R.id.nativeadframe2);
-                    nativeAd2 = unifiedNativeAd;
+                    frameLayout = findViewById(R.id.nativeadframe_downloadbylink);
+                    nativeAd_downloadbylink = unifiedNativeAd;
                 }
                 UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
                         .inflate(R.layout.ad_unified, null);
@@ -528,6 +541,37 @@ public class MainActivity extends AppCompatActivity
     }
 
     /**
+     * This method disables menu items available for logged in user
+     */
+    public void enablePublicProfile(){
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        Menu nav_Menu = navigationView.getMenu();
+        nav_Menu.findItem(R.id.nav_followers).setEnabled(false);
+        nav_Menu.findItem(R.id.nav_followees).setEnabled(false);
+        nav_Menu.findItem(R.id.nav_story_reels).setEnabled(false);
+        if (!hasPrevSession){
+            nav_Menu.findItem(R.id.nav_key).setEnabled(false);
+        }
+        nav_Menu.findItem(R.id.nav_clear_session).setEnabled(false);
+        nav_Menu.findItem(R.id.nav_sign_in).setVisible(true);
+        publicProfile = true;
+    }
+
+    /**
+     * This method enables all menu items
+     */
+    public void disablePublicProfile(){
+        NavigationView navigationView = findViewById(R.id.nav_view);
+        Menu nav_Menu = navigationView.getMenu();
+        nav_Menu.findItem(R.id.nav_followers).setEnabled(true);
+        nav_Menu.findItem(R.id.nav_followees).setEnabled(true);
+        nav_Menu.findItem(R.id.nav_story_reels).setEnabled(true);
+        nav_Menu.findItem(R.id.nav_key).setEnabled(true);
+        nav_Menu.findItem(R.id.nav_sign_in).setVisible(false);
+        publicProfile = false;
+    }
+
+    /**
      * Navigation control
      */
     @Override
@@ -568,18 +612,19 @@ public class MainActivity extends AppCompatActivity
                 }
                 break;
             case R.id.nav_download_by_link:
-                //TODO
-                // add public/private switch button for extra UX
-                if( checkDecryptionString.equals(checkDecryptionSuccess)){
-                    fragmentManager.beginTransaction().replace(R.id.content_frame, downloadByLinkFragment).commit();
-                    refreshAd();
-                }
-                else{
-                    toastMsg(getString(R.string.keyphrase_error_msg));
-                }
+                fragmentManager.beginTransaction().replace(R.id.content_frame, downloadByLinkFragment).commit();
+                refreshAd();
+                break;
+            case R.id.nav_search_user:
+                fragmentManager.beginTransaction().replace(R.id.content_frame, searchUserFragment).commit();
+                refreshAd();
                 break;
             case R.id.nav_download_how_to:
                 fragmentManager.beginTransaction().replace(R.id.content_frame, new DownloadHowToParentFragment()).commit();
+                break;
+            case R.id.nav_sign_in:
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivityForResult(intent,0);
                 break;
             case R.id.nav_clear_session:
                 new AlertDialog.Builder(this)
@@ -648,6 +693,13 @@ public class MainActivity extends AppCompatActivity
     }
 
     /**
+     * Search User
+     */
+    public void onClickUserSearch(View v){
+        return;
+    }
+
+    /**
      * Download with Instagram post link
      */
     public void onClickDownloadByLink(View v){
@@ -667,10 +719,17 @@ public class MainActivity extends AppCompatActivity
                 if (pasteData.contains("instagram.com/p/") || pasteData.contains("instagram.com/tv/")){
                     String url = pasteData + "&__a=1";
                     OkHttpClient client = Util.getHttpClient();
-                    Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
-                            Util.USER_AGENT,Util.CONTENT_TYPE)
-                            .build();
-
+                    Request request;
+                    if (publicProfile){
+                        request = Util.getRequestHeaderBuilder(url, "",
+                                Util.USER_AGENT,Util.CONTENT_TYPE)
+                                .build();
+                    }
+                    else{
+                        request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                                Util.USER_AGENT,Util.CONTENT_TYPE)
+                                .build();
+                    }
                     client.newCall(request).enqueue(new Callback() {
                         @Override
                         public void onFailure(@NotNull Call call, @NotNull IOException e) {
@@ -720,11 +779,17 @@ public class MainActivity extends AppCompatActivity
                                 progressHide();
                                 return;
                             }
-                            final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
-                                    Util.USER_AGENT,Util.CONTENT_TYPE)
-                                    .post(requestBody)
-                                    .build();
-
+                            Request request;
+                            if (publicProfile){
+                                request = Util.getRequestHeaderBuilder(url, "",
+                                        Util.USER_AGENT,Util.CONTENT_TYPE)
+                                        .build();
+                            }
+                            else{
+                                request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                                        Util.USER_AGENT,Util.CONTENT_TYPE)
+                                        .build();
+                            }
                             client.newCall(request).enqueue(new Callback() {
                                 @Override
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
@@ -766,11 +831,17 @@ public class MainActivity extends AppCompatActivity
                         try{
                             String url = pasteData + "&__a=1";
                             OkHttpClient client = Util.getHttpClient();
-
-                            final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
-                                    Util.USER_AGENT,Util.CONTENT_TYPE)
-                                    .build();
-
+                            Request request;
+                            if (publicProfile){
+                                request = Util.getRequestHeaderBuilder(url, "",
+                                        Util.USER_AGENT,Util.CONTENT_TYPE)
+                                        .build();
+                            }
+                            else{
+                                request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                                        Util.USER_AGENT,Util.CONTENT_TYPE)
+                                        .build();
+                            }
                             client.newCall(request).enqueue(new Callback() {
                                 @Override
                                 public void onFailure(@NotNull Call call, @NotNull IOException e) {
@@ -1152,6 +1223,7 @@ public class MainActivity extends AppCompatActivity
             if (resultCode == Activity.RESULT_OK) {
                 String keyphrase = data.getStringExtra("keyphrase");
                 if (keyphrase != null) {
+                    disablePublicProfile();
                     getSharedPreferencesValues();
                     int status = decryptArguments(keyphrase);
                     if (status == 0) {
@@ -1160,6 +1232,9 @@ public class MainActivity extends AppCompatActivity
                                 .commitAllowingStateLoss();
                         getFollows(USER_ID, 2);
                     }
+                }
+                if (data.getBooleanExtra("skipped",true)){
+                    enablePublicProfile();
                 }
             }
         }
@@ -1423,14 +1498,17 @@ public class MainActivity extends AppCompatActivity
 
         if (sharedPreferences.contains("logged_in") &&
                 sharedPreferences.getInt("logged_in", 0) == 1){
+            hasPrevSession = true;
             try{
                 USER_ID = sharedPreferences.getString("user_id", null);
                 SESSION_ID = sharedPreferences.getString("session_id", null);
                 checkDecryptionSuccess = sharedPreferences.getString("check", null);
                 checkDecryptionString = sharedPreferences.getString("checkEnc", null);
                 initVector = sharedPreferences.getString("init_vector", null);
+                disablePublicProfile();
             }
             catch (Exception e){
+                enablePublicProfile();
                 e.printStackTrace();
             }
         }
@@ -1526,6 +1604,7 @@ public class MainActivity extends AppCompatActivity
                 }
             }
         });
+        hasPrevSession = false;
     }
 
     /**

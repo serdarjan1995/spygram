@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Instagram Story Downloader</string>
+    <string name="app_name">Instagram Story Viewer / Downloader</string>
     <string name="navigation_drawer_open">Navigasyon menüyü aç</string>
     <string name="navigation_drawer_close">Navigasyon menüyü kapat</string>
-    <string name="nav_header_title">Instagram Story Downloader</string>
+    <string name="nav_header_title">Story Viewer / Downloader</string>
     <string name="action_settings">Ayarlar</string>
     <string name="menu_key">Şifre ayarla</string>
     <string name="menu_followers">Takipçiler</string>
@@ -12,6 +12,8 @@
     <string name="menu_download_by_link">Link ile indir</string>
     <string name="menu_download_how_to">Nasıl indirilir?</string>
     <string name="sign_in">Oturum aç</string>
+    <string name="sign_in_skip">Oturum açmadan devam et</string>
+    <string name="or_text">veya</string>
     <string name="password">Parola</string>
     <string name="username">Kullanıcı adı</string>
     <string name="keyphrase">Anahtar kelime</string>
@@ -57,4 +59,6 @@
     <string name="pp_downloaded">%s kullanıcının profil resmi indirildi. [%s]</string>
     <string name="fail_login">Oturum açma başarısız</string>
     <string name="challenge_req">Bu cihazı, ekstra doğrulama yöntem ile Instagram hesabına kaydetmelisiniz</string>
+    <string name="search_button">Ara</string>
+    <string name="search_field_placeholder">Kullanıcı adı</string>
 </resources>

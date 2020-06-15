@@ -1,10 +1,10 @@
 <resources>
-    <string name="app_name">Instagram Story Downloader</string>
+    <string name="app_name">Instagram Story Viewer / Downloader</string>
     <string name="navigation_drawer_open">Открыть навигацию</string>
     <string name="navigation_drawer_close">Закрыть навигацию</string>
-    <string name="nav_header_title">Instagram Story Downloader</string>
+    <string name="nav_header_title">Story Viewer / Downloader</string>
     <string name="action_settings">Настройки</string>
-    <string name="menu_key">Установить ключ шифрования</string>
+    <string name="menu_key">Ввести ключ шифрования</string>
     <string name="menu_followers">Подписки</string>
     <string name="menu_following">Подписчики</string>
     <string name="menu_story_reels">Истории</string>
@@ -12,10 +12,12 @@
     <string name="menu_download_by_link">Скачать по ссылке</string>
     <string name="menu_download_how_to">Как скачать</string>
     <string name="sign_in">Войти</string>
+    <string name="sign_in_skip">Продолжить без аккаунта</string>
+    <string name="or_text">или</string>
     <string name="password">Пароль</string>
     <string name="username">Имя пользователя</string>
     <string name="keyphrase">Ключевая фраза</string>
-    <string name="set_keyphrase">Введит ключевую фразу</string>
+    <string name="set_keyphrase">Ввести ключевую фразу</string>
     <string name="encryption_text">Ваша сессия будет храниться локально и должна быть зашифрована.\nПожалуйста, установите ключевую фразу, которая будет запрашиваться при открытии приложения</string>
     <string name="_2fa_auth_code">2-х факторный код</string>
     <string name="verification_code">Проверочный код</string>
@@ -57,4 +59,6 @@
     <string name="pp_downloaded">Фотография профиля %s загруженного. [%s]</string>
     <string name="fail_login">Не удалось войти!</string>
     <string name="challenge_req">Вы должны зарегистрировать это устройство путем проверки кода в аккаунт Instagram</string>
+    <string name="search_button">Поиск</string>
+    <string name="search_field_placeholder">Имя пользователя</string>
 </resources>

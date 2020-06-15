@@ -22,6 +22,12 @@
             android:title="@string/menu_following" />
 
         <item
+            android:id="@+id/nav_search_user"
+            android:icon="@drawable/ic_baseline_account_circle_24"
+            android:title="@string/sign_in"
+            android:visible="false"/>
+
+        <item
             android:id="@+id/nav_download_by_link"
             android:icon="@drawable/ic_cloud_download_black_24dp"
             android:title="@string/menu_download_by_link" />
@@ -37,5 +43,11 @@
         android:id="@+id/nav_clear_session"
         android:icon="@drawable/ic_launcher_foreground"
         android:title="@string/logout_str" />
+    <item
+        android:id="@+id/nav_sign_in"
+        android:icon="@drawable/ic_sign_in"
+        android:title="@string/sign_in"
+        android:visible="false"/>
+
 
 </menu>

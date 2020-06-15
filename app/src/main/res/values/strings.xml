@@ -1,8 +1,8 @@
 <resources>
-    <string name="app_name">Instagram Story Downloader</string>
+    <string name="app_name">Instagram Story Viewer / Downloader</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="nav_header_title">Instagram Story Downloader</string>
+    <string name="nav_header_title">Story Viewer / Downloader</string>
     <string name="action_settings">Settings</string>
     <string name="menu_key">Set Key</string>
     <string name="menu_followers">Followers</string>
@@ -12,6 +12,8 @@
     <string name="menu_download_by_link">Download by link</string>
     <string name="menu_download_how_to">How to download</string>
     <string name="sign_in">Sign in</string>
+    <string name="sign_in_skip">Skip and continue without account</string>
+    <string name="or_text">or</string>
     <string name="password">Password</string>
     <string name="username">Username</string>
     <string name="keyphrase">Keyphrase</string>
@@ -57,4 +59,6 @@
     <string name="pp_downloaded">Profile photo of %s downloaded. [%s]</string>
     <string name="fail_login">Login failed!</string>
     <string name="challenge_req">You should register this device via challenge verification to Instagram account</string>
+    <string name="search_button">Search</string>
+    <string name="search_field_placeholder">Username</string>
 </resources>

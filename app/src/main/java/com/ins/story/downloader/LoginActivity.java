@@ -42,6 +42,7 @@ public class LoginActivity extends AppCompatActivity {
     private String androidId;
     private String challenge_api_path;
     private Button loginButton;
+    private Button skipLogin_button;
     private ViewAnimator progressview;
     private Handler handler;
 
@@ -50,6 +51,7 @@ public class LoginActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
         loginButton = findViewById(R.id.login_button);
+        skipLogin_button = findViewById(R.id.login_skip_button);
         usernameEditText = findViewById(R.id.login_username);
         passwordEditText = findViewById(R.id.login_password);
         progressview = findViewById(R.id.progress_view_login);
@@ -75,6 +77,15 @@ public class LoginActivity extends AppCompatActivity {
                         e.printStackTrace();
                     }
                 }
+            }
+        });
+        skipLogin_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent resultIntent = new Intent();
+                resultIntent.putExtra("skipped", true);
+                setResult(Activity.RESULT_OK, resultIntent);
+                finish();
             }
         });
     }
@@ -267,14 +278,14 @@ public class LoginActivity extends AppCompatActivity {
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == 1) {
+        if (requestCode == 1) { // success setUpKeyphrase
             if (resultCode == Activity.RESULT_OK) {
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra("keyphrase", data.getStringExtra("keyphrase"));
                 setResult(Activity.RESULT_OK, resultIntent);
                 finish();
             }
-        } else if (requestCode == 2) {
+        } else if (requestCode == 2) {  // 2FA
             if (resultCode == Activity.RESULT_OK) {
                 Intent intent = new Intent(LoginActivity.this, SetUpKeyphraseActivity.class);
                 Bundle b = new Bundle();
@@ -284,7 +295,7 @@ public class LoginActivity extends AppCompatActivity {
                 startActivityForResult(intent, 1);
             }
         }
-        else if (requestCode == 3) {
+        else if (requestCode == 3) { //challenge code
             if (resultCode == Activity.RESULT_OK) {
                 JSONObject json = new JSONObject();
                 try {
