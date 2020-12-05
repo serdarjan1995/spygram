@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -40,22 +40,22 @@ public class LoginActivity extends AppCompatActivity {
     private String username;
     private String password;
     private String androidId;
-    private String challenge_api_path;
+    private String challengeApiPath;
     private Button loginButton;
-    private Button skipLogin_button;
-    private ViewAnimator progressview;
+    private ViewAnimator progressView;
     private Handler handler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.login_layout);
         loginButton = findViewById(R.id.login_button);
-        skipLogin_button = findViewById(R.id.login_skip_button);
+        Button skipLoginButton = findViewById(R.id.login_skip_button);
         usernameEditText = findViewById(R.id.login_username);
         passwordEditText = findViewById(R.id.login_password);
-        progressview = findViewById(R.id.progress_view_login);
-        progressview.setVisibility(ViewAnimator.INVISIBLE);
+        progressView = findViewById(R.id.progress_view_login);
+        progressView.setVisibility(ViewAnimator.INVISIBLE);
         handler = new Handler(LoginActivity.this.getMainLooper());
         loginButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -79,7 +79,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
             }
         });
-        skipLogin_button.setOnClickListener(new View.OnClickListener() {
+        skipLoginButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent resultIntent = new Intent();
@@ -89,7 +89,6 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
-
 
 
     private void loginTry(JSONObject json){
@@ -166,8 +165,8 @@ public class LoginActivity extends AppCompatActivity {
                             else if (responseJson.has("status") && responseJson.get("status").equals("fail") &&
                                     responseJson.has("message") &&
                                     responseJson.get("message").equals("challenge_required") ){
-                                //TODO : rare case not sure how to fix it
-                                challenge_api_path = responseJson.getJSONObject("challenge").getString("api_path");
+                                //TODO : Instagram Challenge Code - need to test
+                                challengeApiPath = responseJson.getJSONObject("challenge").getString("api_path");
                                 String mid = "";
                                 if (!response.headers("Set-Cookie").isEmpty()) {
                                     for (String cookies : response.headers("Set-Cookie")) {
@@ -183,7 +182,7 @@ public class LoginActivity extends AppCompatActivity {
 
                                     }
                                 }
-                                requestChallenge(challenge_api_path,mid);
+                                requestChallenge(challengeApiPath, mid);
                             }
                             else if (responseJson.has("status") && responseJson.get("status").equals("fail") ){
                                 backgroundThreadShortToast(responseJson.getString("message"));
@@ -200,6 +199,7 @@ public class LoginActivity extends AppCompatActivity {
             }
         });
     }
+
 
     private void requestChallenge(String url, final String mid){
         String urlLogin = Util.URL_HOST + url + "?device_id=" + androidId;
@@ -232,7 +232,7 @@ public class LoginActivity extends AppCompatActivity {
                             b.putString("phone_number", step_data.getString("phone_number"));
                             b.putString("androidId", androidId);
                             b.putString("mid", mid);
-                            b.putString("challenge_api_path", challenge_api_path);
+                            b.putString("challenge_api_path", challengeApiPath);
                             b.putString("step_name", r_response.getString("step_name"));
                             intent.putExtras(b);
                             startActivityForResult(intent, 3);
@@ -262,7 +262,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
 
-
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
         if (context != null && msg != null) {
@@ -275,6 +274,7 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
         super.onActivityResult(requestCode, resultCode, data);
@@ -282,6 +282,7 @@ public class LoginActivity extends AppCompatActivity {
             if (resultCode == Activity.RESULT_OK) {
                 Intent resultIntent = new Intent();
                 resultIntent.putExtra("keyphrase", data.getStringExtra("keyphrase"));
+                resultIntent.putExtra("skipped", false);
                 setResult(Activity.RESULT_OK, resultIntent);
                 finish();
             }
@@ -310,32 +311,36 @@ public class LoginActivity extends AppCompatActivity {
         }
     }
 
+
     public void progressShow(){
         handler.post(new Runnable() {
             @Override
             public void run() {
                 loginButton.setEnabled(false);
-                progressview.setVisibility(ViewAnimator.VISIBLE);
+                progressView.setVisibility(ViewAnimator.VISIBLE);
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
     }
 
+
     public void progressHide(){
         handler.post(new Runnable() {
             @Override
             public void run() {
                 loginButton.setEnabled(true);
-                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
     }
 
+
     public void onBackPressed() {
         finishAffinity();
     }
+
 
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();

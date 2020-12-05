@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentStatePagerAdapter;
@@ -16,9 +16,9 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 
 public class StoryViewer extends FragmentActivity {
-
     private ArrayList<StoryEntity> storyEntities = new ArrayList<>();
     private ViewPager pager;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +68,7 @@ public class StoryViewer extends FragmentActivity {
 
     }
 
+
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
@@ -77,6 +78,5 @@ public class StoryViewer extends FragmentActivity {
     public void onBackPressed() {
         finish();
     }
-
 
 }

@@ -61,4 +61,6 @@
     <string name="challenge_req">Bu cihazı, ekstra doğrulama yöntem ile Instagram hesabına kaydetmelisiniz</string>
     <string name="search_button">Ara</string>
     <string name="search_field_placeholder">Kullanıcı adı</string>
+    <string name="public_profile">Açık profil</string>
+    <string name="search_profile">Profil ara</string>
 </resources>

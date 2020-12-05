@@ -8,11 +8,19 @@
     tools:context=".MainActivity"
     >
 
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="20dp"
+        android:text="@string/menu_download_by_link"
+        android:textAppearance="@style/TextAppearance.AppCompat.Display1" />
+
     <Button
         android:id="@+id/check_download_clipboard"
         android:layout_width="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="70dp"
+        android:layout_marginTop="30dp"
         android:layout_height="wrap_content"
         android:onClick="onClickDownloadByLink"
         android:text="@string/check_link_clipboard" />

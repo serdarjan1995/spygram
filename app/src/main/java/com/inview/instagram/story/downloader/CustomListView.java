@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -57,18 +57,20 @@ import okhttp3.ResponseBody;
 
 public class CustomListView extends ArrayAdapter<String> {
 
-    private ArrayList<UserFollow> followers;
+    private ArrayList<UserIG> followers;
     private Activity context;
     private boolean allHasStory;
     private Handler handler;
     private ViewAnimator progressView;
+
 
     @Override
     public int getCount() {
         return followers.size();
     }
 
-    public CustomListView(Activity context, ArrayList<UserFollow> followers, boolean allHaveStory) {
+
+    public CustomListView(Activity context, ArrayList<UserIG> followers, boolean allHaveStory) {
         super(context, R.layout.followers_list);
         this.context = context;
         this.followers = followers;
@@ -76,6 +78,7 @@ public class CustomListView extends ArrayAdapter<String> {
         handler = new Handler(Looper.getMainLooper());
         progressView = context.findViewById(R.id.progress_main);
     }
+
 
     @Override
     public View getView(int position, View convertView, @NotNull final ViewGroup parent) {
@@ -147,35 +150,49 @@ public class CustomListView extends ArrayAdapter<String> {
                                         ArrayList<MediaDownloadEntity> imageDownloadEntities = new ArrayList<>();
 
                                         if (user.has("hd_profile_pic_url_info")){
-                                            JSONObject hd_profile_pic_url_info = user.getJSONObject("hd_profile_pic_url_info");
+                                            JSONObject hd_profile_pic_url_info = user.getJSONObject(
+                                                    "hd_profile_pic_url_info");
                                             imageDownloadEntities.add(new MediaDownloadEntity(
-                                                    hd_profile_pic_url_info.getString("url"),
-                                                    hd_profile_pic_url_info.getString("height"),
-                                                    hd_profile_pic_url_info.getString("width"),1,""));
+                                                    hd_profile_pic_url_info
+                                                            .getString("url"),
+                                                    hd_profile_pic_url_info
+                                                            .getString("height"),
+                                                    hd_profile_pic_url_info
+                                                            .getString("width"),
+                                                    1,
+                                                    ""));
                                         }
                                         else{
                                             success = false;
                                         }
 
                                         if (user.has("hd_profile_pic_versions")){
-                                            JSONArray hd_profile_pic_versions = user.getJSONArray("hd_profile_pic_versions");
+                                            JSONArray hd_profile_pic_versions = user.getJSONArray(
+                                                    "hd_profile_pic_versions");
                                             for(int i=0; i<hd_profile_pic_versions.length(); i++){
                                                 imageDownloadEntities.add(new MediaDownloadEntity(
-                                                        hd_profile_pic_versions.getJSONObject(i).getString("url"),
-                                                        hd_profile_pic_versions.getJSONObject(i).getString("height"),
-                                                        hd_profile_pic_versions.getJSONObject(i).getString("width"),1,""));
+                                                        hd_profile_pic_versions.getJSONObject(i)
+                                                                .getString("url"),
+                                                        hd_profile_pic_versions.getJSONObject(i)
+                                                                .getString("height"),
+                                                        hd_profile_pic_versions.getJSONObject(i)
+                                                                .getString("width"),
+                                                        1,
+                                                        ""));
                                             }
                                         }
                                         else{
                                             success = false;
                                         }
 
-                                        progressHide();
                                         if (success){
-                                            backgroundThreadDialog(imageDownloadEntities,followers.get(finalPositionInt).getUsername());
+                                            backgroundThreadDialog(imageDownloadEntities,
+                                                    followers.get(finalPositionInt).getUsername());
+                                            progressHide();
                                         }
                                         else{
-                                            backgroundThreadShortToast("Please try again!");
+                                            //backgroundThreadShortToast("Please try again!");
+                                            downloadFromInstaDp(followers.get(finalPositionInt).getUsername());
                                         }
 
                                     }
@@ -183,49 +200,17 @@ public class CustomListView extends ArrayAdapter<String> {
                                 catch (Exception e) {
                                     e.printStackTrace();
                                     backgroundThreadShortToast(context.getString(R.string.net_err));
+                                    progressHide();
                                 }
                             }
-                            progressHide();
+                            else{
+                                backgroundThreadShortToast("Please try again!");
+                                progressHide();
+                            }
+
                         }
                         else{
-                            String url = Util.URL_PP_DOWNLOAD_IZ;
-                            OkHttpClient client = new OkHttpClient.Builder().build();
-                            RequestBody req = new okhttp3.FormBody.Builder()
-                                    .add("submit", followers.get(finalPositionInt).getUsername())
-                                    .build();
-                            final Request request = new Request.Builder()
-                                    .url(url)
-                                    .post(req)
-                                    .build();
-
-                            client.newCall(request).enqueue(new Callback() {
-                                @Override
-                                public void onFailure(@NotNull Call call, @NotNull IOException e) {
-                                    e.printStackTrace();
-                                    backgroundThreadShortToast(context.getString(R.string.net_err));
-                                    progressHide();
-                                }
-
-                                @Override
-                                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
-                                    ResponseBody responseBody = response.body();
-                                    if (responseBody == null){
-                                        backgroundThreadShortToast(context.getString(R.string.net_err));
-                                        return;
-                                    }
-                                    String response_str = responseBody.string();
-                                    Pattern pattern = Pattern.compile("https?:\\/\\/[-a-zA-Z0-9@:%._+~/?&;#=]+.jpe?g[-a-zA-Z0-9@:%._+~/?&;#=]+");
-                                    Matcher matcher = pattern.matcher(response_str);
-                                    progressHide();
-                                    if (matcher.find()) {
-                                        String pp_url = matcher.group();
-                                        downloadImage(pp_url,followers.get(finalPositionInt).getUsername(),"0");
-                                    }
-                                    else{
-                                        backgroundThreadShortToast(context.getString(R.string.net_err));
-                                    }
-                                }
-                            });
+                            downloadFromInstaDp(followers.get(finalPositionInt).getUsername());
                         }
                     }
                 });
@@ -234,6 +219,53 @@ public class CustomListView extends ArrayAdapter<String> {
 
         return r;
     }
+
+
+    public void downloadFromInstaDp(final String username){
+        String url = Util.URL_PP_DOWNLOAD_IZ;
+        OkHttpClient client = new OkHttpClient.Builder().build();
+        RequestBody req = new okhttp3.FormBody.Builder()
+                .add("submit", username)
+                .build();
+        final Request request = new Request.Builder()
+                .url(url)
+                .post(req)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                e.printStackTrace();
+                backgroundThreadShortToast(context.getString(R.string.net_err));
+                progressHide();
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response)
+                    throws IOException {
+                ResponseBody responseBody = response.body();
+                if (responseBody == null){
+                    backgroundThreadShortToast(context.getString(R.string.net_err));
+                    return;
+                }
+                String response_str = responseBody.string();
+                Pattern pattern = Pattern.compile(
+                        "https?://[-a-zA-Z0-9@:%._+~/?&;#=]+.jpe?g[-a-zA-Z0-9@:%._+~/?&;#=]+");
+                Matcher matcher = pattern.matcher(response_str);
+
+                if (matcher.find()) {
+                    String ppUrl = matcher.group();
+                    ppUrl = ppUrl.replace("&amp;","&");
+                    downloadImage(ppUrl, username, "0");
+                }
+                else{
+                    backgroundThreadShortToast(context.getString(R.string.net_err));
+                }
+                progressHide();
+            }
+        });
+    }
+
 
     public void backgroundThreadShortToast(final String msg) {
         if (context != null && msg != null) {
@@ -245,6 +277,7 @@ public class CustomListView extends ArrayAdapter<String> {
             });
         }
     }
+
 
     public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> images,
                                        final String username) {
@@ -262,8 +295,10 @@ public class CustomListView extends ArrayAdapter<String> {
                         public void onClick(View view) {
                             if (ContextCompat.checkSelfPermission(context,
                                     Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                                downloadImage(images.get(rg.getCheckedRadioButtonId()).getUrl(), username,
-                                                        images.get(rg.getCheckedRadioButtonId()).getDimensions());
+                                downloadImage(
+                                        images.get(rg.getCheckedRadioButtonId()).getUrl(),
+                                        username,
+                                        images.get(rg.getCheckedRadioButtonId()).getDimensions());
                                 dialog.dismiss();
                             }
                             else{
@@ -286,6 +321,7 @@ public class CustomListView extends ArrayAdapter<String> {
         }
     }
 
+
     public void downloadImage(String url, final String username, final String dim){
         OkHttpClient client = new OkHttpClient.Builder().build();
         final Request request = new Request.Builder()
@@ -306,7 +342,8 @@ public class CustomListView extends ArrayAdapter<String> {
                     if (responseBody != null){
                         InputStream inputStream = responseBody.byteStream();
                         Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                        File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                        File saveDir = new File(Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_PICTURES),
                                 context.getString(R.string.app_name));
                         if(!saveDir.exists()){
                             if(!saveDir.mkdirs()){
@@ -326,7 +363,8 @@ public class CustomListView extends ArrayAdapter<String> {
                             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
                             out.flush();
                             out.close();
-                            MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                            MediaScannerConnection.scanFile(context, new String[] {
+                                    file.getAbsolutePath()},
                                     new String[] {"image/*"}, null);
                         }
                         catch (IOException e){
@@ -334,10 +372,12 @@ public class CustomListView extends ArrayAdapter<String> {
                             return;
                         }
 
-                        NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        NotificationManager nm =(NotificationManager) context.getSystemService(
+                                Context.NOTIFICATION_SERVICE);
                         if (nm!=null){
                             Uri uri = FileProvider.getUriForFile(context,
-                                    context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                                    context.getApplicationContext()
+                                            .getPackageName() + ".mfileprovider", file);
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             intent.setDataAndType(uri, "image/*");
                             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
@@ -352,7 +392,10 @@ public class CustomListView extends ArrayAdapter<String> {
                             mBuilder.setVibrate(new long[] {100,100});
                             mBuilder.setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_SUMMARY);
                             mBuilder.setSmallIcon(R.drawable.ic_wallpaper_black_24dp);
-                            mBuilder.setContentText( String.format(context.getString(R.string.pp_downloaded),username,dim) );
+                            mBuilder.setContentText( String.format(
+                                    context.getString(R.string.pp_downloaded),
+                                    username,
+                                    dim) );
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }
                     }
@@ -379,6 +422,7 @@ public class CustomListView extends ArrayAdapter<String> {
         }
     }
 
+
     public void progressShow(){
         handler.post(new Runnable() {
             @Override
@@ -389,6 +433,7 @@ public class CustomListView extends ArrayAdapter<String> {
             }
         });
     }
+
 
     public void progressHide(){
         handler.post(new Runnable() {

@@ -8,9 +8,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:318850473587:android:01032e6b155395a07f9406",
+        "mobilesdk_app_id": "1:318850473587:android:de34dc42fb7e2eeb7f9406",
         "android_client_info": {
-          "package_name": "com.ins.story.downloader"
+          "package_name": "com.inview.instagram.story.downloader"
         }
       },
       "oauth_client": [

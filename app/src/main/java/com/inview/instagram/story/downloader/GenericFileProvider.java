@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import androidx.core.content.FileProvider;
 

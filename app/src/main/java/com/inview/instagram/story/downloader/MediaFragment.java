@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.Manifest;
 import android.app.Dialog;
@@ -48,6 +48,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.TimeZone;
 
 import okhttp3.Call;
@@ -58,7 +59,6 @@ import okhttp3.Response;
 import okhttp3.ResponseBody;
 
 public class MediaFragment extends Fragment {
-
     private Handler handler;
     private ViewAnimator progressView;
     public static MediaFragment newInstance(StoryEntity storyEntity) {
@@ -99,7 +99,9 @@ public class MediaFragment extends Fragment {
         downloadIcon.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                backgroundThreadDialog(storyEntity.getMediaDownloadEntities(),storyEntity.getUsername(),v.getContext());
+                backgroundThreadDialog(storyEntity.getMediaDownloadEntities(),
+                        storyEntity.getUsername(),
+                        v.getContext());
             }
         });
 
@@ -224,6 +226,7 @@ public class MediaFragment extends Fragment {
         }
     }
 
+
     public void downloadMedia(final MediaDownloadEntity media, final String username, final Context context){
         progressShow(1);
         OkHttpClient client = new OkHttpClient.Builder().build();
@@ -248,7 +251,8 @@ public class MediaFragment extends Fragment {
                         Uri uri = null;
                         if (media.getMediaType() == 1){
                             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_PICTURES),
                                     context.getString(R.string.app_name));
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
@@ -270,7 +274,8 @@ public class MediaFragment extends Fragment {
                                 out.flush();
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
-                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                                        context.getApplicationContext().getPackageName() + ".mfileprovider",
+                                        file);
 
                                 MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
                                         new String[] {"image/*"}, null);
@@ -283,7 +288,8 @@ public class MediaFragment extends Fragment {
 
                         }
                         else if (media.getMediaType() == 2){
-                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_MOVIES),
                                     context.getString(R.string.app_name));
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
@@ -313,7 +319,8 @@ public class MediaFragment extends Fragment {
                                 out.flush();
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
-                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                                        context.getApplicationContext().getPackageName() + ".mfileprovider",
+                                        file);
 
                                 MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
                                         new String[] {"video/*"}, null);
@@ -325,7 +332,8 @@ public class MediaFragment extends Fragment {
                             }
                         }
                         progressHide(1);
-                        NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        NotificationManager nm =(NotificationManager) context.getSystemService(
+                                Context.NOTIFICATION_SERVICE);
                         if (uri != null && nm != null){
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             if (media.getMediaType()==1){
@@ -350,7 +358,8 @@ public class MediaFragment extends Fragment {
                             mBuilder.setAutoCancel(true);
                             mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
                             mBuilder.setVibrate(new long[] {100,100});
-                            mBuilder.setContentText( String.format("Story of %s downloaded. [%s]",username,media.getDimensions()) );
+                            mBuilder.setContentText( String.format("Story of %s downloaded. [%s]",
+                                    username,media.getDimensions()) );
                             nm.notify((int)System.currentTimeMillis() , mBuilder.build()) ;
                         }
 
@@ -374,12 +383,14 @@ public class MediaFragment extends Fragment {
         }
     }
 
+
     public void progressShow(int freezeUI){
-        if (freezeUI==1){
+        if (freezeUI==1  && getActivity()!= null){
             this.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    getActivity().getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+                    Objects.requireNonNull(getActivity()).getWindow().
+                            setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                             WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
                 }
             });
@@ -392,12 +403,14 @@ public class MediaFragment extends Fragment {
         });
     }
 
+
     public void progressHide(int freezeUI){
         if (freezeUI==1 && getActivity()!= null){
             this.getActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    getActivity().getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
+                    Objects.requireNonNull(getActivity()).getWindow()
+                            .clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
                 }
             });
 
@@ -409,7 +422,5 @@ public class MediaFragment extends Fragment {
             }
         });
     }
-
-
 
 }

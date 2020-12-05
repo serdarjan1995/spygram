@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -32,6 +32,7 @@ import android.view.Gravity;
 import android.view.View;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
 import androidx.core.app.NotificationCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
@@ -56,9 +57,12 @@ import com.google.android.gms.ads.initialization.OnInitializationCompleteListene
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.firebase.remoteconfig.BuildConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfig;
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings;
 import com.onesignal.OneSignal;
+import com.squareup.picasso.Picasso;
 
 import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.appcompat.app.AppCompatActivity;
@@ -70,6 +74,7 @@ import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -98,6 +103,7 @@ import java.util.Random;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.OkHttpClient;
@@ -123,8 +129,8 @@ public class MainActivity extends AppCompatActivity
     private String initVector;
     private AdView bannerAdView;
     private UnifiedNativeAd nativeAd;
-    private UnifiedNativeAd nativeAd_downloadbylink;
-    private UnifiedNativeAd nativeAd_usersearch;
+    private UnifiedNativeAd nativeAdDownloadByLink;
+    private UnifiedNativeAd nativeAdUserSearch;
     private boolean loggedOut = false;
     private Handler handler;
     private ViewAnimator progressView;
@@ -133,15 +139,18 @@ public class MainActivity extends AppCompatActivity
     final String UPDATE_URL = "update_url";
     private boolean publicProfile = true;
     private boolean hasPrevSession = false;
+    private boolean hasOpenSession = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = findViewById(R.id.toolbar);
+        toolbar.setTitle(R.string.nav_header_title);
         setSupportActionBar(toolbar);
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
-        NavigationView navigationView = findViewById(R.id.nav_view);
+        final NavigationView navigationView = findViewById(R.id.nav_view);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.addDrawerListener(toggle);
@@ -153,9 +162,12 @@ public class MainActivity extends AppCompatActivity
         NotificationManager nm =(NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (nm != null && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
             CharSequence name = getString(R.string.app_name);
-            String description = "Instagram Story Downloader notification channel";
+            String description = getString(R.string.app_name) + " notification channel";
             int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel mChannel = new NotificationChannel(Util.NOTIFICATION_CHANNEL_ID, name, importance);
+            NotificationChannel mChannel = new NotificationChannel(
+                    Util.NOTIFICATION_CHANNEL_ID,
+                    name,
+                    importance);
             mChannel.setDescription(description);
             mChannel.enableLights(true);
             mChannel.setLightColor(Color.YELLOW);
@@ -186,7 +198,6 @@ public class MainActivity extends AppCompatActivity
                     }
                 });
 
-
         // OneSignal Initialization
         OneSignal.startInit(this)
                 .inFocusDisplaying(OneSignal.OSInFocusDisplayOption.Notification)
@@ -203,6 +214,18 @@ public class MainActivity extends AppCompatActivity
         bannerAdView = new AdView(this);
         bannerAdView.setAdUnitId(Util.BANNER_UNIT_ID);
         adContainerView.addView(bannerAdView);
+        View headerView = navigationView.getHeaderView(0);
+        SwitchMaterial publicSwitch = headerView.findViewById(R.id.public_switch);
+        publicSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    enablePublicProfile();
+                }
+                else{
+                    disablePublicProfile();
+                }
+            }
+        });
 
         //prepare UI
         keyFragment = new ViewFragment(R.layout.content_key);
@@ -210,25 +233,43 @@ public class MainActivity extends AppCompatActivity
         followersFragment = new ViewFragment(R.layout.content_followers);
         searchUserFragment = new ViewFragment(R.layout.content_user_search);
         fragmentManager = getSupportFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
-        navigationView.getMenu().getItem(0).setChecked(true);
 
         //check saved session
         getSharedPreferencesValues();
 
+        if(hasPrevSession){
+            navigationView.getMenu().getItem(0).setChecked(true);
+            fragmentManager.beginTransaction().replace(R.id.content_frame, keyFragment).commit();
+        }
+        else{
+            navigationView.getMenu().getItem(5).setChecked(true);
+            fragmentManager.beginTransaction().replace(R.id.content_frame, downloadByLinkFragment).commit();
+        }
+
         //load ads
         loadNativeAd();
         loadBanner();
+
+        // TODO: turning off publicSwitch currently
+        publicSwitch.setVisibility(SwitchMaterial.INVISIBLE);
     }
+
 
     /**
      * checks current app version. if newer is available, forces to update
      * redirects to google play
     **/
     private void checkForUpdate() {
-        int latestAppVersion = (int) firebaseRemoteConfig.getDouble(VERSION_CODE_KEY);
+        int latestAppVersion = (int) firebaseRemoteConfig.getLong(VERSION_CODE_KEY);
         final String update_url = firebaseRemoteConfig.getString(UPDATE_URL);
-        if (latestAppVersion > BuildConfig.VERSION_CODE) {
+        int buildVersionCode = -1;
+        try {
+            buildVersionCode = getPackageManager().getPackageInfo(getPackageName(), 0).versionCode;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+            return;
+        }
+        if (latestAppVersion > buildVersionCode) {
             new AlertDialog.Builder(this).setTitle(getString(R.string.msg_update_pls))
                     .setMessage(getString(R.string.new_version_available))
                     .setPositiveButton( getString(R.string.ok),
@@ -259,6 +300,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
     /**
      * Banner ads. Load and update
      */
@@ -270,6 +312,7 @@ public class MainActivity extends AppCompatActivity
         }
         bannerAdView.loadAd(adRequest);
     }
+
 
     /**
      * Check size for ads area  defined on UI.
@@ -285,6 +328,7 @@ public class MainActivity extends AppCompatActivity
         return AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this, adWidth);
     }
 
+
     /**
      * Native ads. Load and update
      * There are 3 native add fields on UI.
@@ -299,8 +343,8 @@ public class MainActivity extends AppCompatActivity
                         FrameLayout frameLayout;
                         if (navigationView.getMenu().getItem(0).isChecked()){
                             frameLayout = findViewById(R.id.nativeadframe);
-                        }else if (navigationView.getMenu().getItem(5).isChecked()){
-                            frameLayout = findViewById(R.id.nativeadframe_searchuser);
+                        }else if (navigationView.getMenu().getItem(4).isChecked()){
+                            frameLayout = findViewById(R.id.native_ad_search_user);
                         }else {
                             frameLayout = findViewById(R.id.nativeadframe_downloadbylink);
                         }
@@ -420,6 +464,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
     /**
      * Refresh advertisement. Get new one if applicable
      */
@@ -432,11 +477,11 @@ public class MainActivity extends AppCompatActivity
                 if (nativeAd != null) {
                     nativeAd.destroy();
                 }
-                if (nativeAd_downloadbylink != null) {
-                    nativeAd_downloadbylink.destroy();
+                if (nativeAdDownloadByLink != null) {
+                    nativeAdDownloadByLink.destroy();
                 }
-                if (nativeAd_usersearch != null) {
-                    nativeAd_usersearch.destroy();
+                if (nativeAdUserSearch != null) {
+                    nativeAdUserSearch.destroy();
                 }
 
                 NavigationView navigationView = findViewById(R.id.nav_view);
@@ -444,12 +489,12 @@ public class MainActivity extends AppCompatActivity
                 if (navigationView.getMenu().getItem(0).isChecked()){
                     frameLayout = findViewById(R.id.nativeadframe);
                     nativeAd = unifiedNativeAd;
-                }else if (navigationView.getMenu().getItem(5).isChecked()){
-                    frameLayout = findViewById(R.id.nativeadframe_searchuser);
-                    nativeAd_usersearch = unifiedNativeAd;
+                }else if (navigationView.getMenu().getItem(4).isChecked()){
+                    frameLayout = findViewById(R.id.native_ad_search_user);
+                    nativeAdUserSearch = unifiedNativeAd;
                 }else {
                     frameLayout = findViewById(R.id.nativeadframe_downloadbylink);
-                    nativeAd_downloadbylink = unifiedNativeAd;
+                    nativeAdDownloadByLink = unifiedNativeAd;
                 }
                 UnifiedNativeAdView adView = (UnifiedNativeAdView) getLayoutInflater()
                         .inflate(R.layout.ad_unified, null);
@@ -470,16 +515,11 @@ public class MainActivity extends AppCompatActivity
 
         builder.withNativeAdOptions(adOptions);
 
-        AdLoader adLoader = builder.withAdListener(new AdListener() {
-            @Override
-            public void onAdFailedToLoad(int errorCode) {
-                //failed to load
-                // do nothing
-            }
-        }).build();
+        AdLoader adLoader = builder.withAdListener(new AdListener() {}).build();
 
         adLoader.loadAd(new AdRequest.Builder().build());
     }
+
 
     /**
      * Callback for WRITE_EXTERNAL_STORAGE
@@ -510,35 +550,6 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    /**
-     * Options Menu Button on UI ( three dots )
-     * !!!! Not Used !!!!
-     */
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        //getMenuInflater().inflate(R.menu.SOMETHING, menu);
-        return true;
-    }
-
-    /**
-     * Callback for Options Menu Button on UI ( three dots )
-     * !!!! Not Used !!!!
-     */
-    @Override
-    public boolean onOptionsItemSelected(@NotNull MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        //int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        //if (id == R.id.action_settings) {
-        //    return true;
-        //}
-
-        return super.onOptionsItemSelected(item);
-    }
 
     /**
      * This method disables menu items available for logged in user
@@ -546,16 +557,25 @@ public class MainActivity extends AppCompatActivity
     public void enablePublicProfile(){
         NavigationView navigationView = findViewById(R.id.nav_view);
         Menu nav_Menu = navigationView.getMenu();
-        nav_Menu.findItem(R.id.nav_followers).setEnabled(false);
-        nav_Menu.findItem(R.id.nav_followees).setEnabled(false);
-        nav_Menu.findItem(R.id.nav_story_reels).setEnabled(false);
-        if (!hasPrevSession){
-            nav_Menu.findItem(R.id.nav_key).setEnabled(false);
+        nav_Menu.clear();
+        navigationView.inflateMenu(R.menu.activity_main_drawer);
+        nav_Menu.findItem(R.id.nav_followers).setVisible(false);
+        nav_Menu.findItem(R.id.nav_followees).setVisible(false);
+        nav_Menu.findItem(R.id.nav_story_reels).setVisible(false);
+        nav_Menu.findItem(R.id.nav_search_profile).setVisible(false);
+        if (hasPrevSession){
+            nav_Menu.findItem(R.id.nav_key).setVisible(true);
+            nav_Menu.findItem(R.id.nav_clear_session).setVisible(true);
+            nav_Menu.findItem(R.id.nav_sign_in).setVisible(false);
         }
-        nav_Menu.findItem(R.id.nav_clear_session).setEnabled(false);
-        nav_Menu.findItem(R.id.nav_sign_in).setVisible(true);
+        else{
+            nav_Menu.findItem(R.id.nav_sign_in).setVisible(true);
+            nav_Menu.findItem(R.id.nav_clear_session).setVisible(false);
+            nav_Menu.findItem(R.id.nav_key).setVisible(false);
+        }
         publicProfile = true;
     }
+
 
     /**
      * This method enables all menu items
@@ -563,13 +583,97 @@ public class MainActivity extends AppCompatActivity
     public void disablePublicProfile(){
         NavigationView navigationView = findViewById(R.id.nav_view);
         Menu nav_Menu = navigationView.getMenu();
-        nav_Menu.findItem(R.id.nav_followers).setEnabled(true);
-        nav_Menu.findItem(R.id.nav_followees).setEnabled(true);
-        nav_Menu.findItem(R.id.nav_story_reels).setEnabled(true);
-        nav_Menu.findItem(R.id.nav_key).setEnabled(true);
-        nav_Menu.findItem(R.id.nav_sign_in).setVisible(false);
+        nav_Menu.clear();
+        navigationView.inflateMenu(R.menu.activity_main_drawer);
+        nav_Menu.findItem(R.id.nav_followers).setVisible(true);
+        nav_Menu.findItem(R.id.nav_followees).setVisible(true);
+        nav_Menu.findItem(R.id.nav_story_reels).setVisible(true);
+        nav_Menu.findItem(R.id.nav_search_profile).setVisible(true);
+        if (hasOpenSession){
+            nav_Menu.findItem(R.id.nav_followers).setEnabled(true);
+            nav_Menu.findItem(R.id.nav_followees).setEnabled(true);
+            nav_Menu.findItem(R.id.nav_story_reels).setEnabled(true);
+            nav_Menu.findItem(R.id.nav_search_profile).setEnabled(true);
+            getUserInfo();
+        }
+        else{
+            nav_Menu.findItem(R.id.nav_followers).setEnabled(false);
+            nav_Menu.findItem(R.id.nav_followees).setEnabled(false);
+            nav_Menu.findItem(R.id.nav_story_reels).setEnabled(false);
+            nav_Menu.findItem(R.id.nav_search_profile).setEnabled(false);
+        }
+        if (hasPrevSession){
+            nav_Menu.findItem(R.id.nav_key).setVisible(true);
+            nav_Menu.findItem(R.id.nav_clear_session).setVisible(true);
+            nav_Menu.findItem(R.id.nav_sign_in).setVisible(false);
+        }
+        else{
+            nav_Menu.findItem(R.id.nav_key).setVisible(false);
+            nav_Menu.findItem(R.id.nav_sign_in).setVisible(true);
+            nav_Menu.findItem(R.id.nav_clear_session).setVisible(false);
+        }
         publicProfile = false;
     }
+
+
+    /**
+     * Navigation control
+     */
+    public void getUserInfo(){
+        progressShow();
+        OkHttpClient client = Util.getHttpClient();
+        String url = Util.URL_HOST + Util.PATH_USER_INFO;
+        url = String.format(url, USER_ID);
+        Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
+                Util.USER_AGENT, Util.CONTENT_TYPE).build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(@NotNull Call call, @NotNull IOException e) {
+                backgroundThreadShortToast(getString(R.string.net_err));
+                e.printStackTrace();
+            }
+
+            @Override
+            public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException {
+                if(response.isSuccessful()){
+                    ResponseBody responseBody = response.body();
+                    final String userInfo;
+                    if (responseBody != null){
+                        userInfo = responseBody.string();
+                        MainActivity.this.runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                JSONObject jsonUserInfo;
+                                try {
+                                    jsonUserInfo = new JSONObject(userInfo);
+                                    JSONObject user  = jsonUserInfo.getJSONObject("user");
+                                    String username = user.getString("username");;
+                                    String ppUrl = user.getString("profile_pic_url");
+                                    TextView profileName = findViewById(R.id.profile_name);
+                                    profileName.setText(username);
+                                    CircleImageView profileImage = findViewById(R.id.profile_image);
+                                    Picasso.get().load(ppUrl)
+                                            .placeholder(R.drawable.ic_baseline_account_circle_24)
+                                            .error(R.drawable.ic_baseline_account_circle_24)
+                                            .into(profileImage);
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                                catch (Exception e) {
+                                    Log.e("ERROR",getString(R.string.gen_error));
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }
+                    else{
+                        backgroundThreadShortToast(getString(R.string.smth_wrong));
+                    }
+                }
+            }
+        });
+    }
+
 
     /**
      * Navigation control
@@ -615,12 +719,14 @@ public class MainActivity extends AppCompatActivity
                 fragmentManager.beginTransaction().replace(R.id.content_frame, downloadByLinkFragment).commit();
                 refreshAd();
                 break;
-            case R.id.nav_search_user:
+            case R.id.nav_search_profile:
                 fragmentManager.beginTransaction().replace(R.id.content_frame, searchUserFragment).commit();
                 refreshAd();
                 break;
             case R.id.nav_download_how_to:
-                fragmentManager.beginTransaction().replace(R.id.content_frame, new DownloadHowToParentFragment()).commit();
+                fragmentManager.beginTransaction().replace(
+                        R.id.content_frame,
+                        new DownloadHowToParentFragment()).commit();
                 break;
             case R.id.nav_sign_in:
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
@@ -662,6 +768,7 @@ public class MainActivity extends AppCompatActivity
         return true;
     }
 
+
     /**
      * Check Keypass Button
      * If password is right then we able to decrypt saved session
@@ -689,15 +796,23 @@ public class MainActivity extends AppCompatActivity
             }).start();
             NavigationView navigationView = findViewById(R.id.nav_view);
             navigationView.getMenu().getItem(1).setChecked(true);
+            disablePublicProfile();
         }
     }
+
 
     /**
      * Search User
      */
     public void onClickUserSearch(View v){
-        return;
+        progressShow();
+        EditText profileNameEditText = findViewById(R.id.search_username_input);
+        String profileName = profileNameEditText.getText().toString();
+        getFollows(profileName, 0);
+        fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
+                .commitAllowingStateLoss();
     }
+
 
     /**
      * Download with Instagram post link
@@ -738,7 +853,8 @@ public class MainActivity extends AppCompatActivity
                         }
 
                         @Override
-                        public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException{
+                        public void onResponse(@NotNull Call call, @NotNull Response response)
+                                throws IOException{
                             if(response.isSuccessful()){
                                 ResponseBody responseBody = response.body();
                                 if (responseBody != null){
@@ -758,9 +874,11 @@ public class MainActivity extends AppCompatActivity
                     Pattern pattern_st = Pattern.compile("story_media_id=[0-9_]+");
                     Matcher matcher_st = pattern_st.matcher(pasteData);
                     if (matcher.find()) {
-                        String highlight = matcher.group().replace("/s/", "").replace("?","");
+                        String highlight = matcher.group().replace("/s/", "")
+                                .replace("?","");
                         matcher_st.find();
-                        final String media_id = matcher_st.group().replace("story_media_id=", "");
+                        final String media_id = matcher_st.group()
+                                .replace("story_media_id=", "");
                         try{
                             final String highlight_id = new String(Base64.decode(highlight,Base64.NO_WRAP));
                             String url = Util.URL_HOST + Util.PATH_REELS_MEDIA;
@@ -798,18 +916,24 @@ public class MainActivity extends AppCompatActivity
                                 }
 
                                 @Override
-                                public void onResponse(@NotNull Call call, @NotNull Response response) throws IOException{
+                                public void onResponse(@NotNull Call call, @NotNull Response response)
+                                        throws IOException{
                                     if(response.isSuccessful()){
                                         ResponseBody responseBody = response.body();
                                         if (responseBody != null){
                                             ArrayList<MediaDownloadEntity> mediaDownloadEntities =
-                                                    Util.getHighlightMediaEntities(responseBody.string(),highlight_id,media_id);
+                                                    Util.getHighlightMediaEntities(
+                                                            responseBody.string(),
+                                                            highlight_id,
+                                                            media_id);
                                             progressHide();
                                             if (mediaDownloadEntities.size()>0){
-                                                backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
+                                                backgroundThreadDialog(mediaDownloadEntities,
+                                                        MainActivity.this);
                                             }
                                             else{
-                                                backgroundThreadShortToast(getString(R.string.clipboard_not_valid));
+                                                backgroundThreadShortToast(getString(
+                                                        R.string.clipboard_not_valid));
                                             }
                                         }
                                     }
@@ -859,7 +983,8 @@ public class MainActivity extends AppCompatActivity
                                                 progressHide();
                                                 if (responseJson.has("user") &&
                                                         responseJson.getJSONObject("user").has("id")) {
-                                                    String user_id = responseJson.getJSONObject("user").getString("id");
+                                                    String user_id = responseJson.getJSONObject("user")
+                                                            .getString("id");
                                                     getStoryOfUserByStoryId(user_id,story_id);
                                                 }
                                                 else{
@@ -869,7 +994,8 @@ public class MainActivity extends AppCompatActivity
                                             catch(Exception e){
                                                 e.printStackTrace();
                                                 progressHide();
-                                                backgroundThreadShortToast(getString(R.string.clipboard_not_valid));
+                                                backgroundThreadShortToast(
+                                                        getString(R.string.clipboard_not_valid));
                                             }
                                         }
                                     }
@@ -894,6 +1020,7 @@ public class MainActivity extends AppCompatActivity
         progressHide();
     }
 
+
     /**
      * Request user story by storyId
      */
@@ -902,7 +1029,7 @@ public class MainActivity extends AppCompatActivity
         String url = Util.URL_HOST + Util.PATH_GET_STORY;
         url = String.format(url,user_id);
         final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
-                Util.USER_AGENT,Util.CONTENT_TYPE).build();
+                Util.USER_AGENT, Util.CONTENT_TYPE).build();
 
         client.newCall(request).enqueue(new Callback() {
             @Override
@@ -947,23 +1074,36 @@ public class MainActivity extends AppCompatActivity
                                         JSONObject candidate;
                                         for (int j=0; j<imgCandidates.length(); j++){
                                             candidate = imgCandidates.getJSONObject(j);
-                                            mediaDownloadEntities.add(new MediaDownloadEntity(candidate.getString("url"),
-                                                    candidate.getString("height"),candidate.getString("width"),
-                                                    1, media_id));
+                                            mediaDownloadEntities.add(
+                                                    new MediaDownloadEntity(
+                                                            candidate.getString("url"),
+                                                            candidate.getString("height"),
+                                                            candidate.getString("width"),
+                                                            1, media_id));
                                         }
                                     }
                                     else if (media_type == 2){
-                                        JSONObject videoVersion = item.getJSONArray("video_versions").getJSONObject(0);
-                                        mediaDownloadEntities.add(new MediaDownloadEntity(videoVersion.getString("url"),
-                                                videoVersion.getString("height"),videoVersion.getString("width"),
-                                                2, media_id));
+                                        JSONObject videoVersion = item.getJSONArray("video_versions")
+                                                .getJSONObject(0);
+                                        mediaDownloadEntities.add(
+                                                new MediaDownloadEntity(
+                                                        videoVersion.getString("url"),
+                                                        videoVersion.getString("height"),
+                                                        videoVersion.getString("width"),
+                                                        2,
+                                                        media_id));
                                         if (item.has("image_versions2")){
                                             JSONArray imgCandidates = item.getJSONObject("image_versions2")
                                                     .getJSONArray("candidates");
-                                            mediaDownloadEntities.add(new MediaDownloadEntity(imgCandidates.getJSONObject(0).getString("url"),
-                                                    imgCandidates.getJSONObject(0).getString("height"),
-                                                    imgCandidates.getJSONObject(0).getString("width"),
-                                                    1, media_id));
+                                            mediaDownloadEntities.add(new MediaDownloadEntity(
+                                                    imgCandidates.getJSONObject(0)
+                                                            .getString("url"),
+                                                    imgCandidates.getJSONObject(0)
+                                                            .getString("height"),
+                                                    imgCandidates.getJSONObject(0)
+                                                            .getString("width"),
+                                                    1,
+                                                    media_id));
                                         }
                                     }
                                     backgroundThreadDialog(mediaDownloadEntities, MainActivity.this);
@@ -984,11 +1124,13 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+
     /**
      * Dialog menu
      * Used for available sizes for downloading media
      */
-    public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities, final Activity context) {
+    public void backgroundThreadDialog(final ArrayList<MediaDownloadEntity> mediaDownloadEntities,
+                                       final Activity context) {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
@@ -1070,6 +1212,7 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+
     /**
      * Download media and save it to gallery
      */
@@ -1097,7 +1240,8 @@ public class MainActivity extends AppCompatActivity
                         Uri uri = null;
                         if (media.getMediaType() == 1){
                             Bitmap bitmap = BitmapFactory.decodeStream(inputStream);
-                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_PICTURES),
                                     context.getString(R.string.app_name));
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
@@ -1119,9 +1263,11 @@ public class MainActivity extends AppCompatActivity
                                 out.flush();
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
-                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                                        context.getApplicationContext()
+                                                .getPackageName() + ".mfileprovider", file);
 
-                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                MediaScannerConnection.scanFile(context, new String[] {
+                                        file.getAbsolutePath()},
                                         new String[] {"image/*"}, null);
                             }
                             catch (IOException e){
@@ -1132,7 +1278,8 @@ public class MainActivity extends AppCompatActivity
 
                         }
                         else if (media.getMediaType() == 2){
-                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),
+                            File saveDir = new File(Environment.getExternalStoragePublicDirectory(
+                                    Environment.DIRECTORY_MOVIES),
                                     context.getString(R.string.app_name));
                             if(!saveDir.exists()){
                                 if(!saveDir.mkdirs()){
@@ -1162,9 +1309,11 @@ public class MainActivity extends AppCompatActivity
                                 out.flush();
                                 out.close();
                                 uri = FileProvider.getUriForFile(context,
-                                        context.getApplicationContext().getPackageName() + ".mfileprovider", file);
+                                        context.getApplicationContext()
+                                                .getPackageName() + ".mfileprovider", file);
 
-                                MediaScannerConnection.scanFile(context, new String[] {file.getAbsolutePath()},
+                                MediaScannerConnection.scanFile(context, new String[] {
+                                        file.getAbsolutePath()},
                                         new String[] {"video/*"}, null);
                             }
                             catch (IOException e){
@@ -1174,7 +1323,8 @@ public class MainActivity extends AppCompatActivity
                             }
                         }
                         progressHide();
-                        NotificationManager nm =(NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                        NotificationManager nm = (NotificationManager) context
+                                .getSystemService(Context.NOTIFICATION_SERVICE);
                         if (uri != null && nm != null){
                             Intent intent = new Intent(Intent.ACTION_VIEW);
                             if (media.getMediaType()==1){
@@ -1184,9 +1334,13 @@ public class MainActivity extends AppCompatActivity
                                 intent.setDataAndType(uri, "video/*");
                             }
                             intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                            PendingIntent contentIntent = PendingIntent.getActivity(context, 0,
-                                    intent, PendingIntent.FLAG_CANCEL_CURRENT);
-                            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context ,
+                            PendingIntent contentIntent = PendingIntent.getActivity(
+                                    context,
+                                    0,
+                                    intent,
+                                    PendingIntent.FLAG_CANCEL_CURRENT);
+                            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(
+                                    context ,
                                     Util.NOTIFICATION_CHANNEL_ID ) ;
                             mBuilder.setContentTitle(context.getString(R.string.app_name));
                             mBuilder.setContentIntent(contentIntent);
@@ -1194,11 +1348,17 @@ public class MainActivity extends AppCompatActivity
                             String contentText;
                             if (media.getMediaType()==1){
                                 mBuilder.setSmallIcon(R.drawable.ic_panorama_black_24dp);
-                                contentText = String.format(getString(R.string.image_downloaded),media.getId(),media.getDimensions());
+                                contentText = String.format(
+                                        getString(R.string.image_downloaded),
+                                        media.getId(),
+                                        media.getDimensions());
                             }
                             else{
                                 mBuilder.setSmallIcon(R.drawable.ic_ondemand_video_black_24dp);
-                                contentText = String.format(getString(R.string.video_downloaded),media.getId(),media.getDimensions());
+                                contentText = String.format(
+                                        getString(R.string.video_downloaded),
+                                        media.getId(),
+                                        media.getDimensions());
                             }
                             mBuilder.setContentText( contentText );
                             mBuilder.setPriority(NotificationCompat.PRIORITY_DEFAULT);
@@ -1214,6 +1374,7 @@ public class MainActivity extends AppCompatActivity
 
     }
 
+
     /**
      * Handle result from LoginActivity
      */
@@ -1223,7 +1384,6 @@ public class MainActivity extends AppCompatActivity
             if (resultCode == Activity.RESULT_OK) {
                 String keyphrase = data.getStringExtra("keyphrase");
                 if (keyphrase != null) {
-                    disablePublicProfile();
                     getSharedPreferencesValues();
                     int status = decryptArguments(keyphrase);
                     if (status == 0) {
@@ -1231,6 +1391,7 @@ public class MainActivity extends AppCompatActivity
                         fragmentManager.beginTransaction().replace(R.id.content_frame, followersFragment)
                                 .commitAllowingStateLoss();
                         getFollows(USER_ID, 2);
+                        disablePublicProfile();
                     }
                 }
                 if (data.getBooleanExtra("skipped",true)){
@@ -1240,6 +1401,7 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
     /**
      * Get followers and list to UI
      */
@@ -1247,16 +1409,19 @@ public class MainActivity extends AppCompatActivity
         progressShow();
         OkHttpClient client = Util.getHttpClient();
         String url;
-        if (followType == 1){
+        if (followType == 0){
+            url = Util.URL_HOST + Util.PATH_USER_SEARCH + "?q=" + id;
+        }
+        else if(followType == 1){
             url = Util.URL_HOST + Util.PATH_GET_FOLLOWERS;
-            url = String.format(url,id);
+            url = String.format(url, id);
         }
         else{
             url = Util.URL_HOST + Util.PATH_GET_FOLLOWINGS;
             url = String.format(url,id);
         }
 
-        final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
+        final ArrayList <UserIG> userIGArrayList = new ArrayList<>();
         Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
                 Util.USER_AGENT,Util.CONTENT_TYPE).build();
 
@@ -1291,30 +1456,34 @@ public class MainActivity extends AppCompatActivity
                                 JSONArray users  = json_followers.getJSONArray("users");
                                 String userId;
                                 String username;
-                                String pp_url;
-                                String full_name;
-                                long latest_reel_media;
+                                String ppUrl;
+                                String fullName;
+                                long latestReelMedia;
                                 JSONObject user;
-                                UserFollow userFollow;
+                                UserIG userIG;
                                 for (int i = 0; i < users.length(); i++) {
                                     user = users.getJSONObject(i);
                                     userId = Long.toString(user.getLong("pk"));
                                     username = user.getString("username");
-                                    pp_url = user.getString("profile_pic_url");
-                                    full_name = user.getString("full_name");
-                                    latest_reel_media = user.getLong("latest_reel_media");
-                                    userFollow = new UserFollow(userId,username,pp_url,full_name,latest_reel_media);
-                                    userFollowArrayList.add(userFollow);
+                                    ppUrl = user.getString("profile_pic_url");
+                                    fullName = user.getString("full_name");
+                                    latestReelMedia = user.getLong("latest_reel_media");
+                                    userIG = new UserIG(userId,
+                                            username,
+                                            ppUrl,
+                                            fullName,
+                                            latestReelMedia);
+                                    userIGArrayList.add(userIG);
                                 }
 
                                 CustomListView customListview = new CustomListView(MainActivity.this,
-                                        userFollowArrayList, false);
+                                        userIGArrayList, false);
                                 ListView lst = findViewById(R.id.listview_followers);
                                 lst.setAdapter(customListview);
                                 lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                     @Override
                                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                        getStoryOfUser(userFollowArrayList.get(i).getUserId());
+                                        getStoryOfUser(userIGArrayList.get(i).getUserId());
                                     }
                                 });
 
@@ -1334,6 +1503,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
+
 
     /**
      * Get story by userId
@@ -1407,12 +1577,13 @@ public class MainActivity extends AppCompatActivity
         });
     }
 
+
     /**
      * Get all stories available and list them
      */
     public void getStoryReels(){
         progressShow();
-        final ArrayList <UserFollow> userFollowArrayList = new ArrayList<>();
+        final ArrayList <UserIG> userIGArrayList = new ArrayList<>();
         String url = Util.URL_HOST + Util.PATH_REELS_TRAY;
         OkHttpClient client = Util.getHttpClient();
         final Request request = Util.getRequestHeaderBuilder(url, SESSION_ID,
@@ -1444,30 +1615,37 @@ public class MainActivity extends AppCompatActivity
                                         JSONArray tray = responseJson.getJSONArray("tray");
                                         String userId;
                                         String username;
-                                        String pp_url;
-                                        String full_name;
+                                        String ppUrl;
+                                        String fullName;
                                         JSONObject user;
-                                        UserFollow userFollow;
+                                        UserIG userIG;
                                         for (int i = 0; i < tray.length(); i++) {
                                             user = tray.getJSONObject(i).getJSONObject("user");
                                             userId = Long.toString(user.getLong("pk"));
                                             username = user.getString("username");
-                                            pp_url = user.getString("profile_pic_url");
-                                            full_name = user.getString("full_name");
-                                            userFollow = new UserFollow(userId, username, pp_url, full_name, 0);
-                                            userFollowArrayList.add(userFollow);
+                                            ppUrl = user.getString("profile_pic_url");
+                                            fullName = user.getString("full_name");
+                                            userIG = new UserIG(userId,
+                                                    username,
+                                                    ppUrl,
+                                                    fullName,
+                                                    0);
+                                            userIGArrayList.add(userIG);
                                         }
                                         handler.post(new Runnable() {
                                             @Override
                                             public void run() {
-                                                CustomListView customListview = new CustomListView(MainActivity.this,
-                                                        userFollowArrayList, true);
+                                                CustomListView customListview = new CustomListView(
+                                                        MainActivity.this,
+                                                        userIGArrayList,
+                                                        true);
                                                 ListView lst = findViewById(R.id.listview_followers);
                                                 lst.setAdapter(customListview);
                                                 lst.setOnItemClickListener(new AdapterView.OnItemClickListener() {
                                                     @Override
                                                     public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                                                        getStoryOfUser(userFollowArrayList.get(i).getUserId());
+                                                        getStoryOfUser(userIGArrayList.get(i)
+                                                                .getUserId());
                                                     }
                                                 });
                                             }
@@ -1487,6 +1665,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
+
 
     /**
      * Handle previous session or init new
@@ -1518,13 +1697,14 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
+
     /**
      * Decryption of previous session
      * For successful decryption user should enter his keyphrase
      * Otherwise decryption is not available
      */
     public int decryptArguments(String keyPhrase){
-        String decryptedTest = Util.decrypt(checkDecryptionString,keyPhrase,initVector);
+        String decryptedTest = Util.decrypt(checkDecryptionString, keyPhrase, initVector);
         if (decryptedTest == null){
             toastMsg(getString(R.string.keyphrase_wrong));
             return -1;
@@ -1532,15 +1712,17 @@ public class MainActivity extends AppCompatActivity
         byte[] decryptedTestInBytes = decryptedTest.getBytes(StandardCharsets.UTF_8);
         String decryptedTestMD5 = Util.toHexString(Util.md5hash(Util.md5hash(decryptedTestInBytes)));
         if (decryptedTestMD5.equals(checkDecryptionSuccess)){
-            USER_ID = Util.decrypt(USER_ID,keyPhrase,initVector);
-            SESSION_ID = Util.decrypt(SESSION_ID,keyPhrase,initVector);
+            USER_ID = Util.decrypt(USER_ID, keyPhrase, initVector);
+            SESSION_ID = Util.decrypt(SESSION_ID, keyPhrase, initVector);
             SESSION_ID = "sessionid=" + SESSION_ID;
             checkDecryptionString = decryptedTestMD5;
             toastMsg(getString(R.string.keyphrase_right));
+            hasOpenSession = true;
             return 0;
         }
         return -1;
     }
+
 
     /**
      * Toast message. Code friendly.
@@ -1548,6 +1730,7 @@ public class MainActivity extends AppCompatActivity
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
 
     /**
      * Toast message using handler
@@ -1563,6 +1746,7 @@ public class MainActivity extends AppCompatActivity
             });
         }
     }
+
 
     /**
      * if keyphrase entered and decryption was successful then logout invalidating session
@@ -1607,6 +1791,7 @@ public class MainActivity extends AppCompatActivity
         hasPrevSession = false;
     }
 
+
     /**
      * Progress start
      */
@@ -1620,6 +1805,7 @@ public class MainActivity extends AppCompatActivity
             }
         });
     }
+
 
     /**
      * Progress stop

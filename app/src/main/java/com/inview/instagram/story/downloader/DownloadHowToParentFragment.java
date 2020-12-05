@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -16,10 +16,12 @@ import com.rd.PageIndicatorView;
 public class DownloadHowToParentFragment extends Fragment {
     private final int pageSize = 8;
 
+
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         return inflater.inflate(R.layout.content_download_how_to, container, false);
     }
+
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {

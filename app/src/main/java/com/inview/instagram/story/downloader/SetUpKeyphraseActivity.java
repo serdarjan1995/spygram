@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -34,8 +34,8 @@ import okhttp3.ResponseBody;
 
 public class SetUpKeyphraseActivity extends AppCompatActivity {
     private EditText keyphraseEditText;
-    private String userid;
-    private String sessionid;
+    private String userId;
+    private String sessionId;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,8 +43,8 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
         setContentView(R.layout.encryption_layout);
         Bundle b = getIntent().getExtras();
         if (b != null){
-            userid = b.getString("userid");
-            sessionid = b.getString("sessionid");
+            userId = b.getString("userid");
+            sessionId = b.getString("sessionid");
         }
         keyphraseEditText = findViewById(R.id.encryption_credential_text);
         Button keyphraseButton = findViewById(R.id.buttonsetkeyphraseEnc);
@@ -59,9 +59,9 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
                     Random random = new Random();
                     byte[] initvector = new byte[16];
                     random.nextBytes(initvector);
-                    String encryptedUserid = Util.encrypt("" + userid, keyphrase, initvector);
-                    String encryptedSessionid = Util.encrypt("" + sessionid, keyphrase, initvector);
-                    String initvectorEncoded = Base64.encodeToString(initvector,Base64.NO_WRAP);
+                    String encryptedUserId = Util.encrypt("" + userId, keyphrase, initvector);
+                    String encryptedSessionId = Util.encrypt("" + sessionId, keyphrase, initvector);
+                    String initVectorEncoded = Base64.encodeToString(initvector,Base64.NO_WRAP);
                     byte[] randomByte = new byte[64];
                     new Random().nextBytes(randomByte);
                     String generatedString = Util.toHexString(randomByte);
@@ -74,9 +74,9 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
                             .getPackageName(), Context.MODE_PRIVATE);
                     SharedPreferences.Editor sharedPreferencesEditor = sharedPreferences.edit();
                     sharedPreferencesEditor.putInt("logged_in",1);
-                    sharedPreferencesEditor.putString("user_id", encryptedUserid);
-                    sharedPreferencesEditor.putString("session_id", encryptedSessionid);
-                    sharedPreferencesEditor.putString("init_vector", initvectorEncoded);
+                    sharedPreferencesEditor.putString("user_id", encryptedUserId);
+                    sharedPreferencesEditor.putString("session_id", encryptedSessionId);
+                    sharedPreferencesEditor.putString("init_vector", initVectorEncoded);
                     sharedPreferencesEditor.putString("check", randomByteMD5String);
                     sharedPreferencesEditor.putString("checkEnc", generatedStringEncrypted);
                     sharedPreferencesEditor.apply();
@@ -89,6 +89,7 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
             }
         });
     }
+
 
     public void onBackPressed() {
         new AlertDialog.Builder(this)
@@ -105,10 +106,11 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
 
     }
 
+
     public void logout(){
         String urlLogout = Util.URL_HOST + Util.PATH_LOGOUT;
         OkHttpClient client = Util.getHttpClient();
-        final Request request = Util.getRequestHeaderBuilder(urlLogout, sessionid,
+        final Request request = Util.getRequestHeaderBuilder(urlLogout, sessionId,
                                     Util.USER_AGENT,Util.CONTENT_TYPE)
                 .post(new okhttp3.FormBody.Builder().build())
                 .build();
@@ -139,6 +141,7 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
         });
     }
 
+
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
         if (context != null && msg != null) {
@@ -150,6 +153,7 @@ public class SetUpKeyphraseActivity extends AppCompatActivity {
             });
         }
     }
+
 
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();

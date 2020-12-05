@@ -22,10 +22,10 @@
             android:title="@string/menu_following" />
 
         <item
-            android:id="@+id/nav_search_user"
+            android:id="@+id/nav_search_profile"
             android:icon="@drawable/ic_baseline_account_circle_24"
-            android:title="@string/sign_in"
-            android:visible="false"/>
+            android:title="@string/search_profile"
+            android:visible="true"/>
 
         <item
             android:id="@+id/nav_download_by_link"

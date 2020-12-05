@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -11,6 +11,7 @@ import androidx.fragment.app.Fragment;
 public class HowToDownloadFragment extends Fragment {
     private int resId;
 
+
     public static HowToDownloadFragment newInstance(int resId) {
         HowToDownloadFragment fragment = new HowToDownloadFragment();
         Bundle args = new Bundle();
@@ -19,12 +20,14 @@ public class HowToDownloadFragment extends Fragment {
         return fragment;
     }
 
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        assert getArguments() != null;
         resId = getArguments().getInt("resId", 0);
-
     }
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,

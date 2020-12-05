@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -36,6 +36,7 @@ public class ChallengeActivity extends AppCompatActivity {
     private Button sendChallengeButton;
     private Handler handler;
     private ViewAnimator progressView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -87,6 +88,7 @@ public class ChallengeActivity extends AppCompatActivity {
             }
         }
     }
+
 
     public void getCodeChallenge(JSONObject json){
         progressShow();
@@ -232,6 +234,7 @@ public class ChallengeActivity extends AppCompatActivity {
         }
     }
 
+
     public void onBackPressed() {
         new AlertDialog.Builder(this)
                 .setMessage(getString(R.string.exit_confirm_msg))
@@ -245,9 +248,11 @@ public class ChallengeActivity extends AppCompatActivity {
                 .show();
     }
 
+
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
 
     public void progressHide(){
         handler.post(new Runnable() {
@@ -259,6 +264,7 @@ public class ChallengeActivity extends AppCompatActivity {
             }
         });
     }
+
 
     public void progressShow(){
         handler.post(new Runnable() {

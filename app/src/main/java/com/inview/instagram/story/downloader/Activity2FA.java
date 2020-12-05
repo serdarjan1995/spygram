@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import androidx.appcompat.app.AppCompatActivity;
 import android.app.Activity;
@@ -32,7 +32,8 @@ import okhttp3.ResponseBody;
 public class Activity2FA extends AppCompatActivity {
     private Handler handler;
     private Button send2FaButton;
-    private ViewAnimator progressview;
+    private ViewAnimator progressView;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,8 +41,8 @@ public class Activity2FA extends AppCompatActivity {
         setContentView(R.layout.layout_2fa);
         Bundle b = getIntent().getExtras();
         handler = new Handler(Activity2FA.this.getMainLooper());
-        progressview = findViewById(R.id.progress_view_2fa);
-        progressview.setVisibility(ViewAnimator.INVISIBLE);
+        progressView = findViewById(R.id.progress_view_2fa);
+        progressView.setVisibility(ViewAnimator.INVISIBLE);
         if (b != null) {
             String phone_number = b.getString("phone_number");
             if (phone_number != null && !phone_number.equals("")) {
@@ -141,6 +142,7 @@ public class Activity2FA extends AppCompatActivity {
         }
     }
 
+
     public void backgroundThreadShortToast(final String msg) {
         final Context context = getApplicationContext();
         if (context != null && msg != null) {
@@ -152,6 +154,7 @@ public class Activity2FA extends AppCompatActivity {
             });
         }
     }
+
 
     public void onBackPressed() {
         new AlertDialog.Builder(this)
@@ -166,30 +169,34 @@ public class Activity2FA extends AppCompatActivity {
                 .show();
     }
 
+
     public void progressShow(){
         handler.post(new Runnable() {
             @Override
             public void run() {
                 send2FaButton.setEnabled(false);
-                progressview.setVisibility(ViewAnimator.VISIBLE);
+                progressView.setVisibility(ViewAnimator.VISIBLE);
                 getWindow().setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
                         WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
     }
 
+
     public void progressHide(){
         handler.post(new Runnable() {
             @Override
             public void run() {
                 send2FaButton.setEnabled(true);
-                progressview.setVisibility(ViewAnimator.INVISIBLE);
+                progressView.setVisibility(ViewAnimator.INVISIBLE);
                 getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
             }
         });
     }
 
+
     public void toastMsg(String message){
         Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
     }
+
 }

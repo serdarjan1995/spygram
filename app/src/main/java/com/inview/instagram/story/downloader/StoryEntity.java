@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -17,6 +17,7 @@ public class StoryEntity implements Parcelable {
     private int mediaType;
     private ArrayList<MediaDownloadEntity> mediaDownloadEntities;
 
+
     public StoryEntity(JSONObject jsonObjectItem, String username){
         try {
             mediaDownloadEntities = new ArrayList<>();
@@ -25,16 +26,24 @@ public class StoryEntity implements Parcelable {
             this.mediaType = jsonObjectItem.getInt("media_type");
             this.username = username;
             if ( mediaType == 2 && jsonObjectItem.has("video_versions")){
-                JSONObject videoVersion = jsonObjectItem.getJSONArray("video_versions").getJSONObject(0);
-                mediaDownloadEntities.add(new MediaDownloadEntity(videoVersion.getString("url"),
-                        videoVersion.getString("height"),videoVersion.getString("width"), 2, id));
+                JSONObject videoVersion = jsonObjectItem.getJSONArray("video_versions")
+                        .getJSONObject(0);
+                mediaDownloadEntities.add(new MediaDownloadEntity(
+                        videoVersion.getString("url"),
+                        videoVersion.getString("height"),
+                        videoVersion.getString("width"),
+                        2,
+                        id));
                 this.defaultMediaUrl = videoVersion.getString("url");
                 if (jsonObjectItem.has("image_versions2")){
                     JSONArray imgCandidates = jsonObjectItem.getJSONObject("image_versions2")
                             .getJSONArray("candidates");
-                    mediaDownloadEntities.add(new MediaDownloadEntity(imgCandidates.getJSONObject(0).getString("url"),
+                    mediaDownloadEntities.add(new MediaDownloadEntity(
+                            imgCandidates.getJSONObject(0).getString("url"),
                             imgCandidates.getJSONObject(0).getString("height"),
-                            imgCandidates.getJSONObject(0).getString("width"), 1, id));
+                            imgCandidates.getJSONObject(0).getString("width"),
+                            1,
+                            id));
                 }
             }
             else if (mediaType == 1 && jsonObjectItem.has("image_versions2")){
@@ -43,8 +52,12 @@ public class StoryEntity implements Parcelable {
                 JSONObject candidate;
                 for (int i=0; i<imgCandidates.length(); i++){
                     candidate = imgCandidates.getJSONObject(i);
-                    mediaDownloadEntities.add(new MediaDownloadEntity(candidate.getString("url"),
-                            candidate.getString("height"),candidate.getString("width"), 1, id));
+                    mediaDownloadEntities.add(new MediaDownloadEntity(
+                            candidate.getString("url"),
+                            candidate.getString("height"),
+                            candidate.getString("width"),
+                            1,
+                            id));
                 }
                 this.defaultMediaUrl = mediaDownloadEntities.get(0).getUrl();
             }
@@ -64,6 +77,7 @@ public class StoryEntity implements Parcelable {
         mediaDownloadEntities = in.createTypedArrayList(MediaDownloadEntity.CREATOR);
     }
 
+
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeLong(publishTime);
@@ -74,10 +88,12 @@ public class StoryEntity implements Parcelable {
         dest.writeTypedList(mediaDownloadEntities);
     }
 
+
     @Override
     public int describeContents() {
         return 0;
     }
+
 
     public static final Creator<StoryEntity> CREATOR = new Creator<StoryEntity>() {
         @Override
@@ -91,29 +107,34 @@ public class StoryEntity implements Parcelable {
         }
     };
 
+
     public long getPublishTime() {
         return publishTime;
     }
+
 
     public String getId() {
         return id;
     }
 
+
     public String getUsername() {
         return username;
     }
+
 
     public String getDefaultMediaUrl() {
         return defaultMediaUrl;
     }
 
+
     public int getMediaType() {
         return mediaType;
     }
 
+
     public ArrayList<MediaDownloadEntity> getMediaDownloadEntities() {
         return mediaDownloadEntities;
     }
-
 
 }

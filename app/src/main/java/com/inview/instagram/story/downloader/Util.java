@@ -1,4 +1,4 @@
-package com.ins.story.downloader;
+package com.inview.instagram.story.downloader;
 
 import android.Manifest;
 import android.app.Activity;
@@ -39,6 +39,8 @@ public class Util {
     static String PATH_GET_FOLLOWERS = "/api/v1/friendships/%s/followers/";
     static String PATH_GET_FOLLOWINGS = "/api/v1/friendships/%s/following/";
     static String PATH_GET_STORY = "/api/v1/feed/user/%s/story/";
+    static String PATH_USER_INFO = "/api/v1/users/%s/info/";
+    static String PATH_USER_SEARCH = "/api/v1/users/search/";
     static String PATH_LOGOUT = "/api/v1/accounts/logout/";
     static String PATH_LOGIN = "/api/v1/accounts/login/";
     static String PATH_LOGIN_2FA = "/api/v1/accounts/two_factor_login/";
@@ -47,7 +49,7 @@ public class Util {
     static String CONTENT_TYPE = "Application/x-www-form-urlencoded";
     static String USER_AGENT = "Instagram 99.0.0.32.182 Android";
     static String URL_PP_DOWNLOAD = "https://instadp-cors-222621.appspot.com/get-hd?id=";
-    static String URL_PP_DOWNLOAD_IZ = "http://izuum.com/index.php";
+    static String URL_PP_DOWNLOAD_IZ = "https://izuum.com/index.php";
     static String BANNER_UNIT_ID = "ca-app-pub-2181561381492488/3718457776";
     static String NATIVE_AD_UNIT_ID = "ca-app-pub-2181561381492488/2213804414";
 
@@ -77,12 +79,13 @@ public class Util {
         return digest;
     }
 
+
     public static String encrypt(String input, String keyphrase, byte[] initVector){
         Cipher instance;
-        byte[] keyphraseinbytes;
+        byte[] keyPhraseInBytes;
         try {
-            keyphraseinbytes = md5hash(keyphrase.getBytes(StandardCharsets.UTF_8));
-            SecretKeySpec secretKeySpec = new SecretKeySpec(keyphraseinbytes, "AES");
+            keyPhraseInBytes = md5hash(keyphrase.getBytes(StandardCharsets.UTF_8));
+            SecretKeySpec secretKeySpec = new SecretKeySpec(keyPhraseInBytes, "AES");
             instance = Cipher.getInstance("AES/CBC/PKCS5PADDING");
             instance.init(Cipher.ENCRYPT_MODE, secretKeySpec, new IvParameterSpec(initVector));
             byte[] encrypted = instance.doFinal(input.getBytes(StandardCharsets.UTF_8));
@@ -97,15 +100,16 @@ public class Util {
         }
     }
 
+
     public static String decrypt(String encrypted, String keyphrase, String initVector){
         Cipher instance;
-        byte[] keyphraseinbytes;
-        byte[] initvectorInBytes = Base64.decode(initVector,Base64.NO_WRAP);
+        byte[] keyPhraseInBytes;
+        byte[] initVectorInBytes = Base64.decode(initVector,Base64.NO_WRAP);
         try {
-            keyphraseinbytes = md5hash(keyphrase.getBytes(StandardCharsets.UTF_8));
-            SecretKeySpec secretKeySpec = new SecretKeySpec(keyphraseinbytes, "AES");
+            keyPhraseInBytes = md5hash(keyphrase.getBytes(StandardCharsets.UTF_8));
+            SecretKeySpec secretKeySpec = new SecretKeySpec(keyPhraseInBytes, "AES");
             instance = Cipher.getInstance("AES/CBC/PKCS5PADDING");
-            instance.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(initvectorInBytes));
+            instance.init(Cipher.DECRYPT_MODE, secretKeySpec, new IvParameterSpec(initVectorInBytes));
             byte[] decrypted = instance.doFinal(Base64.decode(encrypted, Base64.NO_WRAP));
             return new String(decrypted);
         } catch (BadPaddingException e) {
@@ -117,6 +121,7 @@ public class Util {
         }
     }
 
+
     public static OkHttpClient getHttpClient(){
         String hostname = "i.instagram.com";
         CertificatePinner certificatePinner = new CertificatePinner.Builder()
@@ -124,26 +129,26 @@ public class Util {
                 //.add(hostname, "sha256/k2v657xBsOVe1PQRwOsHsw3bsGT2VzIqz5K+59sNQws=")
                 //.add(hostname, "sha256/WoiWRyIOVNa9ihaBciRSC7XHjliYS9VwUGOIud4PB18=")
                 .build();
-        OkHttpClient client = new OkHttpClient.Builder()
+
+        return new OkHttpClient.Builder()
                 .certificatePinner(certificatePinner)
                 .build();
-
-        return client;
     }
 
+
     public static Request.Builder getRequestHeaderBuilder(String url,
-                                                          String session_id,
-                                                          String user_agent,
-                                                          String content_type){
+                                                          String sessionId,
+                                                          String userAgent,
+                                                          String contentType){
         Request.Builder request = new Request.Builder()
                 .url(url)
-                .header("User-Agent", user_agent);
-        if (!content_type.equals("")){
-            request.addHeader("Content-Type", content_type);
+                .header("User-Agent", userAgent);
+        if (!contentType.equals("")){
+            request.addHeader("Content-Type", contentType);
         }
 
-        if (!session_id.equals("")){
-            request.addHeader("Cookie", session_id);
+        if (!sessionId.equals("")){
+            request.addHeader("Cookie", sessionId);
         }
         return request;
     }
@@ -157,7 +162,7 @@ public class Util {
 
 
     public static JSONObject getSuccessfulLoginParams(Response response) throws IOException {
-        JSONObject r_json = new JSONObject();
+        JSONObject returnJson = new JSONObject();
         boolean isSuccess = false;
         ResponseBody responseBody = response.body();
         try {
@@ -175,8 +180,8 @@ public class Util {
                                 if (matcher.find()) {
                                     sessionid = matcher.group().replace("sessionid=", "");
                                     sessionid = sessionid.replace(";", "");
-                                    r_json.put("sessionid", sessionid);
-                                    r_json.put("userid", jsonLoggedInUser.getString("pk"));
+                                    returnJson.put("sessionid", sessionid);
+                                    returnJson.put("userid", jsonLoggedInUser.getString("pk"));
                                     isSuccess = true;
                                 }
 
@@ -186,12 +191,13 @@ public class Util {
                     }
                 }
             }
-            r_json.put("is_success", isSuccess);
+            returnJson.put("is_success", isSuccess);
         } catch (JSONException e) {
             e.printStackTrace();
         }
-        return r_json;
+        return returnJson;
     }
+
 
     public static void checkPermission(Activity context) {
         if (ContextCompat.checkSelfPermission(context,
@@ -206,45 +212,53 @@ public class Util {
         }
     }
 
+
     public static ArrayList<MediaDownloadEntity> parseDownloadLinkResponse(String response){
         ArrayList<MediaDownloadEntity> mediaDownloadEntities = new ArrayList<>();
         try{
             JSONObject responseJson = new JSONObject(response);
             if (responseJson.has("graphql") &&
                     responseJson.getJSONObject("graphql").has("shortcode_media")){
-                JSONObject shortcode_media = responseJson.getJSONObject("graphql").getJSONObject("shortcode_media");
-                String config_width;
-                String config_height;
+                JSONObject shortCodeMedia = responseJson.getJSONObject("graphql")
+                        .getJSONObject("shortcode_media");
+                String configWidth;
+                String configHeight;
                 String url;
-                if (shortcode_media.has("__typename")
-                        && shortcode_media.getString("__typename").equals("GraphImage")
-                        && !shortcode_media.getBoolean("is_video")){
+                if (shortCodeMedia.has("__typename")
+                        && shortCodeMedia.getString("__typename").equals("GraphImage")
+                        && !shortCodeMedia.getBoolean("is_video")){
                     //this is image
-                    JSONArray displayResources = shortcode_media.getJSONArray("display_resources");
+                    JSONArray displayResources = shortCodeMedia
+                            .getJSONArray("display_resources");
                     for (int i=displayResources.length()-1; i>=0; i--){
                         url = displayResources.getJSONObject(i).getString("src");
-                        config_height = displayResources.getJSONObject(i).getString("config_height");
-                        config_width = displayResources.getJSONObject(i).getString("config_width");
-                        mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
-                                1,shortcode_media.getString("id")));
+                        configHeight = displayResources.getJSONObject(i).getString("config_height");
+                        configWidth = displayResources.getJSONObject(i).getString("config_width");
+                        mediaDownloadEntities.add(new MediaDownloadEntity(url,
+                                configHeight,
+                                configWidth,
+                                1,
+                                shortCodeMedia.getString("id")));
                     }
-
                 }
-                else if (shortcode_media.has("__typename")
-                        && shortcode_media.getString("__typename").equals("GraphVideo")
-                        && shortcode_media.getBoolean("is_video")){
+                else if (shortCodeMedia.has("__typename")
+                        && shortCodeMedia.getString("__typename").equals("GraphVideo")
+                        && shortCodeMedia.getBoolean("is_video")){
                     //this is video
-                    url = shortcode_media.getString("video_url");
-                    config_height = shortcode_media.getJSONObject("dimensions").getString("height");
-                    config_width = shortcode_media.getJSONObject("dimensions").getString("width");
-                    mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
-                                2,shortcode_media.getString("id")));
+                    url = shortCodeMedia.getString("video_url");
+                    configHeight = shortCodeMedia.getJSONObject("dimensions").getString("height");
+                    configWidth = shortCodeMedia.getJSONObject("dimensions").getString("width");
+                    mediaDownloadEntities.add(new MediaDownloadEntity(url,
+                            configHeight,
+                            configWidth,
+                            2,
+                            shortCodeMedia.getString("id")));
                 }
-                else if (shortcode_media.has("__typename")
-                        && shortcode_media.getString("__typename").equals("GraphSidecar")
-                        && !shortcode_media.getBoolean("is_video")){
+                else if (shortCodeMedia.has("__typename")
+                        && shortCodeMedia.getString("__typename").equals("GraphSidecar")
+                        && !shortCodeMedia.getBoolean("is_video")){
                     //this is slide media
-                    JSONArray slide_edges = shortcode_media.getJSONObject("edge_sidecar_to_children")
+                    JSONArray slide_edges = shortCodeMedia.getJSONObject("edge_sidecar_to_children")
                             .getJSONArray("edges");
                     mediaDownloadEntities.add(null);
                     for (int k=0; k<slide_edges.length(); k++) {
@@ -256,10 +270,13 @@ public class Util {
                             JSONArray displayResources = node.getJSONArray("display_resources");
                             for (int i=displayResources.length()-1; i>=0; i--){
                                 url = displayResources.getJSONObject(i).getString("src");
-                                config_height = displayResources.getJSONObject(i).getString("config_height");
-                                config_width = displayResources.getJSONObject(i).getString("config_width");
-                                mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
-                                        1,node.getString("id")));
+                                configHeight = displayResources.getJSONObject(i).getString("config_height");
+                                configWidth = displayResources.getJSONObject(i).getString("config_width");
+                                mediaDownloadEntities.add(new MediaDownloadEntity(url,
+                                        configHeight,
+                                        configWidth,
+                                        1,
+                                        node.getString("id")));
                             }
 
                         }
@@ -268,15 +285,17 @@ public class Util {
                                 && node.getBoolean("is_video")){
                             //this is video
                             url = node.getString("video_url");
-                            config_height = node.getJSONObject("dimensions").getString("height");
-                            config_width = node.getJSONObject("dimensions").getString("width");
-                            mediaDownloadEntities.add(new MediaDownloadEntity(url,config_height,config_width,
-                                    2,node.getString("id")));
+                            configHeight = node.getJSONObject("dimensions").getString("height");
+                            configWidth = node.getJSONObject("dimensions").getString("width");
+                            mediaDownloadEntities.add(new MediaDownloadEntity(url,
+                                    configHeight,
+                                    configWidth,
+                                    2,
+                                    node.getString("id")));
                         }
                         if (k != slide_edges.length()-1){
                             mediaDownloadEntities.add(null);
                         }
-
                     }
                 }
             }
@@ -285,6 +304,7 @@ public class Util {
         }
         return mediaDownloadEntities;
     }
+
 
     public static ArrayList<MediaDownloadEntity> getHighlightMediaEntities(String response,
                                                                            String highlight_id,
@@ -297,11 +317,11 @@ public class Util {
                 JSONObject highlight = responseJson.getJSONObject("reels").getJSONObject(highlight_id);
                 JSONArray highlight_items = highlight.getJSONArray("items");
                 JSONObject item;
-                String reel_item_id;
+                String reelItemId;
                 for (int i=0; i<highlight_items.length(); i++){
                     item = highlight_items.getJSONObject(i);
-                    reel_item_id = item.getString("id");
-                    if(reel_item_id.equals(media_id)){
+                    reelItemId = item.getString("id");
+                    if(reelItemId.equals(media_id)){
                         int media_type = item.getInt("media_type");
                         if (media_type == 1){
                             JSONArray imgCandidates = item.getJSONObject("image_versions2")
@@ -309,30 +329,37 @@ public class Util {
                             JSONObject candidate;
                             for (int j=0; j<imgCandidates.length(); j++){
                                 candidate = imgCandidates.getJSONObject(j);
-                                mediaDownloadEntities.add(new MediaDownloadEntity(candidate.getString("url"),
-                                        candidate.getString("height"),candidate.getString("width"),
-                                        1, media_id));
+                                mediaDownloadEntities.add(new MediaDownloadEntity(
+                                        candidate.getString("url"),
+                                        candidate.getString("height"),
+                                        candidate.getString("width"),
+                                        1,
+                                        media_id));
                             }
                         }
                         else if (media_type == 2){
-                            JSONObject videoVersion = item.getJSONArray("video_versions").getJSONObject(0);
-                            mediaDownloadEntities.add(new MediaDownloadEntity(videoVersion.getString("url"),
-                                    videoVersion.getString("height"),videoVersion.getString("width"),
-                                    2, media_id));
+                            JSONObject videoVersion = item.getJSONArray("video_versions")
+                                    .getJSONObject(0);
+                            mediaDownloadEntities.add(new MediaDownloadEntity(
+                                    videoVersion.getString("url"),
+                                    videoVersion.getString("height"),
+                                    videoVersion.getString("width"),
+                                    2,
+                                    media_id));
                             if (item.has("image_versions2")){
                                 JSONArray imgCandidates = item.getJSONObject("image_versions2")
                                         .getJSONArray("candidates");
-                                mediaDownloadEntities.add(new MediaDownloadEntity(imgCandidates.getJSONObject(0).getString("url"),
+                                mediaDownloadEntities.add(new MediaDownloadEntity(
+                                        imgCandidates.getJSONObject(0).getString("url"),
                                         imgCandidates.getJSONObject(0).getString("height"),
                                         imgCandidates.getJSONObject(0).getString("width"),
-                                        1, media_id));
+                                        1,
+                                        media_id));
                             }
                         }
                         break;
                     }
                 }
-
-
             }
         } catch (Exception e) {
             e.printStackTrace();

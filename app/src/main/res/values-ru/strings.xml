@@ -61,4 +61,6 @@
     <string name="challenge_req">Вы должны зарегистрировать это устройство путем проверки кода в аккаунт Instagram</string>
     <string name="search_button">Поиск</string>
     <string name="search_field_placeholder">Имя пользователя</string>
+    <string name="public_profile">Анонимный профил</string>
+    <string name="search_profile">Поиск профиля</string>
 </resources>
